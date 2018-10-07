@@ -5,7 +5,7 @@ import java.util.BitSet;
 
 public class IndDNF implements Solution<Boolean> {
 
-
+    
     // EL INDDNF NO PUEDE SER UN BITSET PORQUE LA FUNCION SETVARIABLEVALUE DEBE ACEPTAR UN BITSET
     // Y ESO NO NOS VALE, TIENEN QUE SER VALORES BOOLEANOS.
 

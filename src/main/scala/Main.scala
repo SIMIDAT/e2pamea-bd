@@ -11,8 +11,12 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
-    val problem = ProblemUtils.loadProblem[DoubleSolution]("org.uma.jmetal.problem.multiobjective.zdt.ZDT1")
+    val problem = ProblemUtils.loadProblem[IndDNF]("Problema").asInstanceOf[Problema]
+    problem.readDataset("Air.arff")
+    println(problem.getName)
+    println(problem.getNumberOfVariables)
 
+    System.exit(0)
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
     val crossoverProbability: Double = 0.9
@@ -29,8 +33,7 @@ object Main {
 
 
     // Se construye el algoritmo genetico con los datos que se han introducido.
-    val alg = new
-    val algorithm = new NSGAIIBuilder[DoubleSolution](problem, crossover, mutation)
+    /*val algorithm = new NSGAIIBuilder[DoubleSolution](problem, crossover, mutation)
       .setSelectionOperator(selection)
       .setMaxEvaluations(25000)
       .setPopulationSize(100)
@@ -47,7 +50,7 @@ object Main {
 
     println("Total execution time: " + computingTime + "ms")
 
-    algorithm.getResult.forEach(x => println(x.getObjective(0)))
+    algorithm.getResult.forEach(x => println(x.getObjective(0))) */
 
   }
 
