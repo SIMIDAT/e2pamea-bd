@@ -6,6 +6,8 @@ scalaVersion := "2.12.7"
 
 val jMetalVersion = "5.6"
 
+mainClass in Compile := Some("Main")
+
 libraryDependencies ++= Seq(
   "org.uma.jmetal" % "jmetal-core" % jMetalVersion,
   "org.uma.jmetal" % "jmetal-algorithm" % jMetalVersion,

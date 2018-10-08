@@ -1,3 +1,4 @@
+import main.{IndDNF, Problema}
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
 import org.uma.jmetal.operator.impl.crossover.SBXCrossover
 import org.uma.jmetal.operator.impl.mutation.PolynomialMutation
@@ -11,8 +12,8 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
-    val problem = ProblemUtils.loadProblem[IndDNF]("Problema").asInstanceOf[Problema]
-    problem.readDataset("Air.arff")
+    val problem = ProblemUtils.loadProblem[IndDNF]("main.Problema").asInstanceOf[Problema]
+    problem.readDataset("iris.arff")
     println(problem.getName)
     println(problem.getNumberOfVariables)
 
