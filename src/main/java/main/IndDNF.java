@@ -20,4 +20,23 @@ public class IndDNF extends DefaultBinarySolution {
     public IndDNF(BinaryProblem problem) {
         super(problem);
     }
+
+    /**
+     * It determines whether the variable participates in the rule or not.
+     *
+     * A variable participates in the rules if not all its values are zero or one.
+     * @param var
+     * @return
+     */
+    public boolean participates(int var){
+        return getVariableValue(var).cardinality() > 0 && getVariableValue(var).cardinality() < getVariableValue(var).getBinarySetLength();
+    }
+
+    public int getClas() {
+        return clas;
+    }
+
+    public void setClas(int clas) {
+        this.clas = clas;
+    }
 }
