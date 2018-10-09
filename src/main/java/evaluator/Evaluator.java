@@ -11,6 +11,14 @@ import java.util.ArrayList;
 
 public abstract class Evaluator {
 
+    public ArrayList<QualityMeasure> getObjectives() {
+        return objectives;
+    }
+
+    public void setObjectives(ArrayList<QualityMeasure> objectives) {
+        this.objectives = objectives;
+    }
+
     /**
      * The objectives to be used in the evaluator.
      * These are the objectives employed for guiding the search process and they are used only for its identification.

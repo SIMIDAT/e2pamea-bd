@@ -1,9 +1,14 @@
 package main;
 
+import evaluator.Evaluator;
+import evaluator.EvaluatorIndDNF;
 import fuzzy.Fuzzy;
 import fuzzy.TriangularFuzzySet;
 import org.uma.jmetal.problem.BinaryProblem;
 import org.uma.jmetal.solution.BinarySolution;
+import qualitymeasures.QualityMeasure;
+import qualitymeasures.SuppDiff;
+import qualitymeasures.WRAccNorm;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
@@ -12,7 +17,7 @@ import java.util.Random;
 
 public class Problema implements BinaryProblem {
 
-    // AQUI VAN TODAS LAS FUNCIONES RELACIONES CON EL PROBLEMA
+    // AQUI VAN TODAS LAS FUNCIONES RELACIONADAS CON EL PROBLEMA
     // AQUI EN EL CONSTRUCTOR SE DEBERÍA DE LEER EL FICHERO DE DATOS Y CARGAR LOS DATOS
     // TAMBIEN SE TIENE QUE IMPLEMENTAR EL METODO DE EVALUACIÓN
     // Y EL METODO DE CREACION DE UN NUEVO INDIVIDUO
@@ -52,8 +57,9 @@ public class Problema implements BinaryProblem {
     private ArrayList<ArrayList<Fuzzy>> fuzzySets;
 
     /**
-     *
+     * The evaluator used for measuring the objectives of the individuals
      */
+    private Evaluator evaluator;
 
 
 
@@ -66,6 +72,7 @@ public class Problema implements BinaryProblem {
         // First, read the dataset and select the class
         DataSource source;
         seed = 1; // cambiar
+
         try {
             source = new DataSource(path);
             dataset = source.getDataSet();
@@ -85,6 +92,11 @@ public class Problema implements BinaryProblem {
                     fuzzySets.add(null);
                 }
             }
+            evaluator = new EvaluatorIndDNF();
+            ArrayList<QualityMeasure> objs = new ArrayList<>();
+            objs.add(new WRAccNorm());
+            objs.add(new SuppDiff());
+            evaluator.setObjectives(objs);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -115,9 +127,64 @@ public class Problema implements BinaryProblem {
     @Override
     public void evaluate(BinarySolution solution) {
         // This is for test purposes
+        evaluator.doEvaluation(solution, fuzzySets, dataset);
 
+    }
 
+    public int getNumObjectives() {
+        return numObjectives;
+    }
 
+    public void setNumObjectives(int numObjectives) {
+        this.numObjectives = numObjectives;
+    }
+
+    public int getNumLabels() {
+        return numLabels;
+    }
+
+    public void setNumLabels(int numLabels) {
+        this.numLabels = numLabels;
+    }
+
+    public String getInitialisationMethod() {
+        return initialisationMethod;
+    }
+
+    public void setInitialisationMethod(String initialisationMethod) {
+        this.initialisationMethod = initialisationMethod;
+    }
+
+    public int getSeed() {
+        return seed;
+    }
+
+    public void setSeed(int seed) {
+        this.seed = seed;
+    }
+
+    public ArrayList<ArrayList<Fuzzy>> getFuzzySets() {
+        return fuzzySets;
+    }
+
+    public void setFuzzySets(ArrayList<ArrayList<Fuzzy>> fuzzySets) {
+        this.fuzzySets = fuzzySets;
+    }
+
+    public Evaluator getEvaluator() {
+        return evaluator;
+    }
+
+    public void setEvaluator(Evaluator evaluator) {
+        this.evaluator = evaluator;
+    }
+
+    public Instances getDataset() {
+        return dataset;
+    }
+
+    public void setDataset(Instances dataset) {
+        this.dataset = dataset;
     }
 
     @Override

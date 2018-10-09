@@ -32,4 +32,9 @@ public class TriangularFuzzySet extends Fuzzy {
         if( x > x1) return ((x2 - x) * (getY() / (x2-x1)));
         return getY();
     }
+
+    @Override
+    public String toString() {
+        return "Triangular( " + getValue(0) + ", " + getValue(1) + ", " + getValue(2) + ")";
+    }
 }

@@ -47,4 +47,6 @@ public abstract class Fuzzy {
      */
     public abstract double getBelongingDegree(double x);
 
+    public abstract String toString();
+
 }
