@@ -5,7 +5,12 @@ import evaluator.EvaluatorIndDNF;
 import fuzzy.Fuzzy;
 import fuzzy.TriangularFuzzySet;
 import org.uma.jmetal.problem.BinaryProblem;
+import org.uma.jmetal.problem.ConstrainedProblem;
+import org.uma.jmetal.problem.impl.AbstractBinaryProblem;
 import org.uma.jmetal.solution.BinarySolution;
+import org.uma.jmetal.solution.impl.DefaultBinarySolution;
+import org.uma.jmetal.util.solutionattribute.impl.NumberOfViolatedConstraints;
+import org.uma.jmetal.util.solutionattribute.impl.OverallConstraintViolation;
 import qualitymeasures.QualityMeasure;
 import qualitymeasures.SuppDiff;
 import qualitymeasures.WRAccNorm;
@@ -62,6 +67,15 @@ public class Problema implements BinaryProblem {
     private Evaluator evaluator;
 
 
+    /**
+     * The number of violated constraints in the problem
+     */
+    public NumberOfViolatedConstraints<BinarySolution> numberOfViolatedConstraints;
+
+    /**
+     * The overall constraint violation
+     */
+    public OverallConstraintViolation<BinarySolution> overallConstraintViolation;
 
     /**
      * It reads an ARFF or CSV file using the WEKA API.
@@ -72,6 +86,8 @@ public class Problema implements BinaryProblem {
         // First, read the dataset and select the class
         DataSource source;
         seed = 1; // cambiar
+        numberOfViolatedConstraints = new NumberOfViolatedConstraints<>();
+        overallConstraintViolation = new OverallConstraintViolation<>();
 
         try {
             source = new DataSource(path);
@@ -106,7 +122,7 @@ public class Problema implements BinaryProblem {
 
     @Override
     public int getNumberOfVariables() {
-        return dataset.numAttributes() - 1;
+        return dataset.numAttributes();
     }
 
     @Override
@@ -118,6 +134,7 @@ public class Problema implements BinaryProblem {
     public int getNumberOfConstraints() {
         return 0;
     }
+
 
     @Override
     public String getName() {
@@ -188,24 +205,19 @@ public class Problema implements BinaryProblem {
     }
 
     @Override
-    public IndDNF createSolution() {
+    public BinarySolution createSolution() {
         // Create a random individual
         Random rand = new Random(seed);
         if(initialisationMethod.equalsIgnoreCase("random")){
             // By default, individuals are initialised at random
-            return new IndDNF(this);
+            return new DefaultBinarySolution(this);
         }
         return null;
     }
 
 
-    @Override
-    public int getNumberOfBits(int index) {
-        if(dataset.classIndex() == index){
-            // Que hacer cuando se pregunta por la clase ??
-            return -1;
-        }
 
+    public int getNumberOfBits(int index) {
         if(dataset.attribute(index).isNumeric()){
             return numLabels;
         } else if(dataset.attribute(index).isNominal()){
@@ -215,7 +227,7 @@ public class Problema implements BinaryProblem {
         }
     }
 
-    @Override
+
     public int getTotalNumberOfBits() {
         int suma = 0;
         for(int index = 0; index < dataset.numAttributes(); index++){

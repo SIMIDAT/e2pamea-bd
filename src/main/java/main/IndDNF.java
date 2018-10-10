@@ -8,6 +8,7 @@ import org.uma.jmetal.util.binarySet.BinarySet;
 import weka.core.Attribute;
 import weka.core.Instances;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -23,6 +24,16 @@ public class IndDNF extends DefaultBinarySolution {
         super(problem);
         Random a = new Random(((Problema)problem).getSeed());
         clas = a.nextInt(((Problema) problem).getDataset().numClasses());
+    }
+
+    /**
+     * Copy constructor from a binary solution
+     *
+     * @param other
+     */
+    public IndDNF(DefaultBinarySolution other, int clase){
+        super(other);
+        clas = clase;
     }
 
     /**
@@ -69,7 +80,11 @@ public class IndDNF extends DefaultBinarySolution {
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        int hashCode = 1;
+        for (int i = 0; i < getNumberOfVariables(); i++){
+            hashCode = 31*hashCode + (getVariableValue(i) == null ? 0 : getVariableValue(i).hashCode());
+        }
+         return hashCode;
     }
 
 

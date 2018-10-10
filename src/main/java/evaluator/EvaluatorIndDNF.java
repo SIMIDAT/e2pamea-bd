@@ -4,8 +4,10 @@ import fuzzy.Fuzzy;
 import main.IndDNF;
 import org.uma.jmetal.solution.Solution;
 //import qualitymeasures.ContingencyTable;
+import org.uma.jmetal.solution.impl.DefaultBinarySolution;
 import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
+import scala.util.hashing.Hashing;
 import weka.core.Instances;
 
 import java.util.ArrayList;
@@ -15,21 +17,21 @@ public class EvaluatorIndDNF extends Evaluator {
 
     @Override
     public void doEvaluation(Solution individual, ArrayList<ArrayList<Fuzzy>> fuzzySet, Instances dataset) {
-        if(individual instanceof IndDNF) {
-            IndDNF ind = (IndDNF) individual;
+        if(individual instanceof DefaultBinarySolution) {
+            DefaultBinarySolution ind = (DefaultBinarySolution) individual;
             int tp = 0;
             int fp = 0;
             int tn = 0;
             int fn = 0;
 
             // Now, for each instance in the dataset, calculate the coverage or not of the example
-            if (!ind.isEmpty()) {
+            if (! isEmpty(ind) && ind.getVariableValue(dataset.classIndex()).cardinality() == 1 ) { // The pattern is empty or it is not valid (as the class variable contains more than one class.)
                 for (int i = 0; i < dataset.numInstances(); i++) {
                     double fuzzyTrigger = 1.0;
                     int index = 0;
                     for (int var = 0; var < dataset.numAttributes() && fuzzyTrigger > 0.0; var++) {
                         if (var != dataset.classIndex()) {
-                            if (ind.participates(var)) {
+                            if (participates(ind, var)) {
                                 // The variable participates in the rule (all values are different from zero or one)
                                 if (dataset.attribute(var).isNominal()) {
                                     // Variable nominal
@@ -60,15 +62,17 @@ public class EvaluatorIndDNF extends Evaluator {
                     }
 
                     Double classAttr = dataset.get(i).classValue();
+                    int clas = ind.getVariableValue(dataset.classIndex()).nextSetBit(0);
+
                     // Fuzzy belonging degree is now calculated for the given instance. Calculate the measures
                     if (fuzzyTrigger > 0) {
-                        if (ind.getClas() == classAttr.intValue()) {
+                        if (clas == classAttr.intValue()) {
                             tp++;
                         } else {
                             fp++;
                         }
                     } else {
-                        if (ind.getClas() == classAttr.intValue()) {
+                        if (clas == classAttr.intValue()) {
                             fn++;
                         } else {
                             tn++;
@@ -86,9 +90,39 @@ public class EvaluatorIndDNF extends Evaluator {
                 }
             } else {
                 for (int i = 0; i < ind.getNumberOfObjectives(); i++) {
-                    ind.setObjective(i, 0.0);
+                    ind.setObjective(i, Double.NEGATIVE_INFINITY);
                 }
             }
         }
     }
+
+    @Override
+    public boolean isEmpty(Solution individual) {
+        if(individual instanceof DefaultBinarySolution){
+            DefaultBinarySolution ind = (DefaultBinarySolution) individual;
+            for(int i = 0; i < ind.getNumberOfVariables(); i++){
+                if(ind.getVariableValue(i).cardinality() > 0 && ind.getVariableValue(i).cardinality() < ind.getNumberOfBits(i)){
+                    // variable participates in the rules, is not empty
+                    return false;
+                }
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean participates(Solution individual, int var) {
+        if(individual instanceof DefaultBinarySolution) {
+            DefaultBinarySolution ind = (DefaultBinarySolution) individual;
+            // a variable does not participate in the rule if all its values are 0 or 1.
+            return ind.getVariableValue(var).cardinality() > 0 && ind.getVariableValue(var).cardinality() < ind.getNumberOfBits(var);
+        } else {
+            return false;
+        }
+    }
+
+
 }

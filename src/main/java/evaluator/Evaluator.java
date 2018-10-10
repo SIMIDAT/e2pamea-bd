@@ -60,4 +60,22 @@ public abstract class Evaluator {
      */
     public abstract void doEvaluation(Solution individual, ArrayList<ArrayList<Fuzzy>> fuzzySet, Instances dataset);
 
+
+    /**
+     * It return whether the individual represents the empty pattern or not.
+     *
+     * @param individual
+     * @return
+     */
+    public abstract boolean isEmpty(Solution individual);
+
+    /**
+     * It returns whether a given variable of the individual participates in the pattern or not.
+     *
+     * @param individual
+     * @param var
+     * @return
+     */
+    public abstract boolean participates(Solution individual, int var);
+
 }

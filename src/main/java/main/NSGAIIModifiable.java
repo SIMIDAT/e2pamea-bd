@@ -8,10 +8,7 @@ import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This is the class to be used for adding modfications to the NSGA-II algorithm
@@ -53,7 +50,10 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         getPopulation().forEach(s -> set.add(s));
         ArrayList<S> newPop = new ArrayList<>();
         set.forEach(s -> newPop.add(s));
-
+        ArrayList<Integer> a = new ArrayList<>();
+        for(S b : newPop){
+            a.add(b.hashCode());
+        }
         setPopulation(newPop);
     }
 
