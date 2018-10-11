@@ -1,6 +1,8 @@
 import main.{IndDNF, NSGAIIModifiable, Problema}
+import operators.crossover.NPointCrossover
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
-import org.uma.jmetal.operator.impl.crossover.{HUXCrossover, SBXCrossover}
+import org.uma.jmetal.operator.CrossoverOperator
+import org.uma.jmetal.operator.impl.crossover.{HUXCrossover, SBXCrossover, TwoPointCrossover}
 import org.uma.jmetal.operator.impl.mutation.{BitFlipMutation, PolynomialMutation}
 import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
 import org.uma.jmetal.problem.BinaryProblem
@@ -16,11 +18,13 @@ object Main {
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.Problema").asInstanceOf[Problema]
     problem.readDataset("iris.arff")
+    problem.setInitialisationMethod(Problema.ORIENTED_INITIALISATION)
+    problem.setClass(1)
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
     val crossoverProbability: Double = 0.9
     val crossoverDistributionIndex: Double = 20.0
-    val crossover = new HUXCrossover(crossoverProbability)
+    val crossover = new NPointCrossover[BinarySolution](crossoverProbability, 2)//new HUXCrossover(crossoverProbability)
 
     // Operador de mutacion
     val mutationProbability: Double = 1.0 / problem.getNumberOfVariables
@@ -34,7 +38,7 @@ object Main {
     val dominanceComparator = new DominanceComparator[BinarySolution]().reversed()
 
     // Se construye el algoritmo genetico con los datos que se han introducido.
-    val algorithm = new NSGAIIBuilder[BinarySolution](problem, crossover, mutation)
+    val algorithm = new NSGAIIBuilder[BinarySolution](problem, crossover.asInstanceOf[CrossoverOperator[BinarySolution]], mutation)
       .setSelectionOperator(selection)
       .setMaxEvaluations(25000)
       .setPopulationSize(100).setDominanceComparator(dominanceComparator)
@@ -54,6 +58,7 @@ object Main {
     println("Total execution time: " + computingTime + "ms")
 
     algorithm.getPopulation.forEach(println)
+    problem.evaluate(algorithm.getPopulation.get(1))
 
   }
 

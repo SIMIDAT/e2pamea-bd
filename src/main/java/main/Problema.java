@@ -9,6 +9,8 @@ import org.uma.jmetal.problem.ConstrainedProblem;
 import org.uma.jmetal.problem.impl.AbstractBinaryProblem;
 import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.impl.DefaultBinarySolution;
+import org.uma.jmetal.util.binarySet.BinarySet;
+import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 import org.uma.jmetal.util.solutionattribute.impl.NumberOfViolatedConstraints;
 import org.uma.jmetal.util.solutionattribute.impl.OverallConstraintViolation;
 import qualitymeasures.QualityMeasure;
@@ -18,6 +20,7 @@ import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Random;
 
 public class Problema implements BinaryProblem {
@@ -27,10 +30,19 @@ public class Problema implements BinaryProblem {
     // TAMBIEN SE TIENE QUE IMPLEMENTAR EL METODO DE EVALUACIÓN
     // Y EL METODO DE CREACION DE UN NUEVO INDIVIDUO
 
+    public static int RANDOM_INITIALISATION = 0;
+    public static int ORIENTED_INITIALISATION = 1;
+
     /**
      * The dataset. It contains all the information about the instances
      */
     private Instances dataset;
+
+    /**
+     * The class of the problem for the extraction of rules.
+     */
+    private Clase<BinarySolution> clase;
+    private int clas;
 
 
     /**
@@ -48,8 +60,7 @@ public class Problema implements BinaryProblem {
     /**
      *  The initialisation method used
      */
-    private String initialisationMethod = "random";
-
+    private int initialisationMethod;
 
     /**
      * The seed of the random number generator
@@ -78,6 +89,11 @@ public class Problema implements BinaryProblem {
     public OverallConstraintViolation<BinarySolution> overallConstraintViolation;
 
     /**
+     * The random number generator
+     */
+    public JMetalRandom rand;
+
+    /**
      * It reads an ARFF or CSV file using the WEKA API.
      * @param path The path of the dataset
      */
@@ -88,6 +104,9 @@ public class Problema implements BinaryProblem {
         seed = 1; // cambiar
         numberOfViolatedConstraints = new NumberOfViolatedConstraints<>();
         overallConstraintViolation = new OverallConstraintViolation<>();
+        rand = JMetalRandom.getInstance();
+        rand.setSeed(seed);
+        clase = new Clase<>();
 
         try {
             source = new DataSource(path);
@@ -164,11 +183,11 @@ public class Problema implements BinaryProblem {
         this.numLabels = numLabels;
     }
 
-    public String getInitialisationMethod() {
+    public int getInitialisationMethod() {
         return initialisationMethod;
     }
 
-    public void setInitialisationMethod(String initialisationMethod) {
+    public void setInitialisationMethod(int initialisationMethod) {
         this.initialisationMethod = initialisationMethod;
     }
 
@@ -208,14 +227,28 @@ public class Problema implements BinaryProblem {
     public BinarySolution createSolution() {
         // Create a random individual
         Random rand = new Random(seed);
-        if(initialisationMethod.equalsIgnoreCase("random")){
+        DefaultBinarySolution sol = null;
+        if(initialisationMethod == RANDOM_INITIALISATION){
             // By default, individuals are initialised at random
-            return new DefaultBinarySolution(this);
+            sol = new DefaultBinarySolution(this);
+        } else if(initialisationMethod == ORIENTED_INITIALISATION){
+            // Oriented initialisation
+            sol = OrientedInitialisation(rand, 0.25);
+
         }
-        return null;
+
+        clase.setAttribute(sol, clas);
+        return sol;
     }
 
-
+    /**
+     * Set the class of a pattern
+     *
+     * @param clas
+     */
+    public void setClass(int clas){
+        this.clas = clas;
+    }
 
     public int getNumberOfBits(int index) {
         if(dataset.attribute(index).isNumeric()){
@@ -338,5 +371,54 @@ public class Problema implements BinaryProblem {
             return (tope);
         }
         return (val);
+    }
+
+    /**
+     * It generates a random indivual initialising a percentage of its variables at random.
+     * @param rand
+     * @return
+     */
+    public DefaultBinarySolution OrientedInitialisation(Random rand, double pctVariables){
+        DefaultBinarySolution sol = new DefaultBinarySolution(this);
+        long maxVariablesToInitialise = Math.round(pctVariables * (dataset.numAttributes() - 1));
+        int varsToInit = rand.nextInt((int) maxVariablesToInitialise) + 1;
+
+        BitSet initialised = new BitSet(dataset.numAttributes());
+        initialised.set(dataset.classIndex());
+        int varInitialised = 0;
+
+        while(varInitialised != varsToInit){
+            int var = rand.nextInt(dataset.numAttributes());
+            if (!initialised.get(var)){
+                BinarySet value = new BinarySet(sol.getNumberOfBits(var));
+                for(int i = 0; i < sol.getNumberOfBits(var);i++){
+                    if(rand.nextBoolean())
+                        value.set(i);
+                    else
+                        value.clear(i);
+                }
+                // check if the generated variable is empty and fix it if necessary
+                if(value.cardinality() == 0){
+                    value.set(rand.nextInt(sol.getNumberOfBits(var)));
+                } else  if(value.cardinality() == sol.getNumberOfBits(var)){
+                    value.clear(rand.nextInt(sol.getNumberOfBits(var)));
+                }
+                sol.setVariableValue(var,value);
+                varInitialised++;
+                initialised.set(var);
+            }
+        }
+
+        sol.getVariableValue(dataset.classIndex()).clear();
+        sol.getVariableValue(dataset.classIndex()).set(rand.nextInt(dataset.numClasses()));
+
+        // clear the non-initialised variables
+        for(int i = 0; i < sol.getNumberOfVariables(); i++){
+            if(!initialised.get(i)){
+                sol.getVariableValue(i).clear();
+            }
+        }
+
+        return sol;
     }
 }

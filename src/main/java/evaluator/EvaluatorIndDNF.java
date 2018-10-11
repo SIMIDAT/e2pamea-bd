@@ -1,6 +1,7 @@
 package evaluator;
 
 import fuzzy.Fuzzy;
+import main.Clase;
 import main.IndDNF;
 import org.uma.jmetal.solution.Solution;
 //import qualitymeasures.ContingencyTable;
@@ -25,6 +26,7 @@ public class EvaluatorIndDNF extends Evaluator {
             int fn = 0;
 
             // Now, for each instance in the dataset, calculate the coverage or not of the example
+
             if (! isEmpty(ind) && ind.getVariableValue(dataset.classIndex()).cardinality() == 1 ) { // The pattern is empty or it is not valid (as the class variable contains more than one class.)
                 for (int i = 0; i < dataset.numInstances(); i++) {
                     double fuzzyTrigger = 1.0;
@@ -61,8 +63,11 @@ public class EvaluatorIndDNF extends Evaluator {
                         }
                     }
 
+                    // Get the class of the examples
                     Double classAttr = dataset.get(i).classValue();
-                    int clas = ind.getVariableValue(dataset.classIndex()).nextSetBit(0);
+
+                    // Get the attribute class of the individual
+                    int clas = (int) ind.getAttribute(new Clase<DefaultBinarySolution>().getAttributeIdentifier());
 
                     // Fuzzy belonging degree is now calculated for the given instance. Calculate the measures
                     if (fuzzyTrigger > 0) {

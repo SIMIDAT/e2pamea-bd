@@ -24,6 +24,8 @@
 package qualitymeasures;
 
 import exceptions.InvalidRangeInMeasureException;
+import org.uma.jmetal.solution.BinarySolution;
+import org.uma.jmetal.util.solutionattribute.impl.GenericSolutionAttribute;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -34,7 +36,7 @@ import java.text.DecimalFormatSymbols;
  *
  * @author Angel Miguel Garcia Vico <agvico at ujaen.es>
  */
-public abstract class QualityMeasure  implements Cloneable, Serializable, Comparable<QualityMeasure> {
+public abstract class QualityMeasure extends GenericSolutionAttribute<BinarySolution, Double> implements Cloneable, Serializable, Comparable<QualityMeasure> {
 
     /**
      * Threshold to check if a value is greater than or equal zero.
