@@ -1,3 +1,4 @@
+import evaluator.EvaluatorIndDNF
 import main.{IndDNF, NSGAIIModifiable, Problema}
 import operators.crossover.NPointCrossover
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
@@ -21,6 +22,10 @@ object Main {
     problem.setInitialisationMethod(Problema.ORIENTED_INITIALISATION)
     problem.setClass(1)
 
+    // Se elige el evaluador
+    val evaluador = new EvaluatorIndDNF(problem)
+
+
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
     val crossoverProbability: Double = 0.9
     val crossoverDistributionIndex: Double = 20.0
@@ -42,6 +47,7 @@ object Main {
       .setSelectionOperator(selection)
       .setMaxEvaluations(25000)
       .setPopulationSize(100).setDominanceComparator(dominanceComparator)
+      .setSolutionListEvaluator(evaluador)
       .build
 
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
@@ -58,7 +64,6 @@ object Main {
     println("Total execution time: " + computingTime + "ms")
 
     algorithm.getPopulation.forEach(println)
-    problem.evaluate(algorithm.getPopulation.get(1))
 
   }
 

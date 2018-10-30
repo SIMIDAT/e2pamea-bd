@@ -62,4 +62,11 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         // Aquí iría el reemplazo basado en best-order sort
         return super.replacement(population, offspringPopulation);
     }
+
+    @Override
+    protected void updateProgress() {
+        super.updateProgress();
+
+        // Aqui, para el NSGA-II adaptativo, actualizar los porcentajes de probabilidad para la ejecución de cada método
+    }
 }

@@ -3,6 +3,9 @@ package evaluator;
 import fuzzy.Fuzzy;
 import main.Clase;
 import main.IndDNF;
+import main.Problema;
+import org.uma.jmetal.problem.Problem;
+import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
 //import qualitymeasures.ContingencyTable;
 import org.uma.jmetal.solution.impl.DefaultBinarySolution;
@@ -12,11 +15,16 @@ import scala.util.hashing.Hashing;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
-public class EvaluatorIndDNF extends Evaluator {
+public class EvaluatorIndDNF extends Evaluator<BinarySolution> {
 
-    @Override
+    public EvaluatorIndDNF(Problem<BinarySolution> problem){
+        super();
+        super.setProblem(problem);
+    }
+
     public void doEvaluation(Solution individual, ArrayList<ArrayList<Fuzzy>> fuzzySet, Instances dataset) {
         if(individual instanceof DefaultBinarySolution) {
             DefaultBinarySolution ind = (DefaultBinarySolution) individual;
@@ -130,4 +138,15 @@ public class EvaluatorIndDNF extends Evaluator {
     }
 
 
+    @Override
+    public List<BinarySolution> evaluate(List<BinarySolution> solutionList, Problem<BinarySolution> problem) {
+        // se evalua lo población entera
+        Problema pr = (Problema) problem;
+        solutionList.forEach( s -> doEvaluation(s, pr.getFuzzySets(),((Problema) problem).getDataset()));
+    }
+
+    @Override
+    public void shutdown() {
+
+    }
 }

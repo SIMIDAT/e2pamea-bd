@@ -2,14 +2,35 @@ package evaluator;
 
 import exceptions.InvalidRangeInMeasureException;
 import fuzzy.Fuzzy;
+import org.uma.jmetal.problem.Problem;
+import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
+import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
 import weka.core.Instances;
 
 import java.util.ArrayList;
 
-public abstract class Evaluator {
+/**
+ * An evaluator of individuals to be used in an evolutionary algorithm
+ *
+ * @param <S> The type of the solution to be handled
+ */
+public abstract class Evaluator<S extends Solution> implements SolutionListEvaluator<S> {
+
+    /**
+     * The objectives to be used in the evaluator.
+     * These are the objectives employed for guiding the search process and they are used only for its identification.
+     */
+    private ArrayList<QualityMeasure>  objectives;
+
+    private Problem<S> problem;
+
+
+    /**
+     * GETTERS AND SETTERS
+     */
 
     public ArrayList<QualityMeasure> getObjectives() {
         return objectives;
@@ -19,11 +40,14 @@ public abstract class Evaluator {
         this.objectives = objectives;
     }
 
-    /**
-     * The objectives to be used in the evaluator.
-     * These are the objectives employed for guiding the search process and they are used only for its identification.
-     */
-    private ArrayList<QualityMeasure>  objectives;
+
+    public Problem<S> getProblem() {
+        return problem;
+    }
+
+    public void setProblem(Problem<S> problem) {
+        this.problem = problem;
+    }
 
 
     /**
@@ -58,7 +82,7 @@ public abstract class Evaluator {
      * @param fuzzySet
      * @param dataset
      */
-    public abstract void doEvaluation(Solution individual, ArrayList<ArrayList<Fuzzy>> fuzzySet, Instances dataset);
+//    public abstract void doEvaluation(Solution individual, ArrayList<ArrayList<Fuzzy>> fuzzySet, Instances dataset);
 
 
     /**
@@ -77,5 +101,6 @@ public abstract class Evaluator {
      * @return
      */
     public abstract boolean participates(Solution individual, int var);
+
 
 }
