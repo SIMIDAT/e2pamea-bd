@@ -143,6 +143,8 @@ public class EvaluatorIndDNF extends Evaluator<BinarySolution> {
         // se evalua lo población entera
         Problema pr = (Problema) problem;
         solutionList.forEach( s -> doEvaluation(s, pr.getFuzzySets(),((Problema) problem).getDataset()));
+
+        return solutionList;
     }
 
     @Override
