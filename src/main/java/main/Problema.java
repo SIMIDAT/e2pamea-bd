@@ -127,11 +127,11 @@ public class Problema implements BinaryProblem {
                     fuzzySets.add(null);
                 }
             }
-            evaluator = new EvaluatorIndDNF();
+           /* evaluator = new EvaluatorIndDNF();
             ArrayList<QualityMeasure> objs = new ArrayList<>();
             objs.add(new WRAccNorm());
             objs.add(new SuppDiff());
-            evaluator.setObjectives(objs);
+            evaluator.setObjectives(objs);*/
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -163,8 +163,7 @@ public class Problema implements BinaryProblem {
     @Override
     public void evaluate(BinarySolution solution) {
         // This is for test purposes
-        evaluator.doEvaluation(solution, fuzzySets, dataset);
-
+        //evaluator.doEvaluation(solution, fuzzySets, dataset);
     }
 
     public int getNumObjectives() {

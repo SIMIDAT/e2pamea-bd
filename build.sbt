@@ -13,5 +13,6 @@ libraryDependencies ++= Seq(
   "org.uma.jmetal" % "jmetal-algorithm" % jMetalVersion,
   "org.uma.jmetal" % "jmetal-exec" % jMetalVersion,
   "org.uma.jmetal" % "jmetal-problem" % jMetalVersion,
-  "nz.ac.waikato.cms.weka" % "weka-stable" % "3.8.0"
+  "nz.ac.waikato.cms.weka" % "weka-stable" % "3.8.0",
+  "commons-cli" % "commons-cli" % "1.4"                   // For parsing the parameters in the CLI
 )

@@ -1,5 +1,5 @@
 import evaluator.EvaluatorIndDNF
-import main.{IndDNF, NSGAIIModifiable, Problema}
+import main.{IndDNF, NSGAIIModifiable, ParametersParser, Problema}
 import operators.crossover.NPointCrossover
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
 import org.uma.jmetal.operator.CrossoverOperator
@@ -15,6 +15,9 @@ import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 object Main {
 
   def main(args: Array[String]): Unit = {
+
+    val a = new ParametersParser();
+    System.exit(-1)
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.Problema").asInstanceOf[Problema]
