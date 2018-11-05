@@ -11,6 +11,7 @@ import qualitymeasures.QualityMeasure;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An evaluator of individuals to be used in an evolutionary algorithm

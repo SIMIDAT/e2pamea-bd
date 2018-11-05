@@ -2,8 +2,13 @@ package main;
 
 import evaluator.Evaluator;
 import evaluator.EvaluatorIndDNF;
+import evaluator.EvaluatorIndDNFImproved;
 import fuzzy.Fuzzy;
 import fuzzy.TriangularFuzzySet;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.uma.jmetal.problem.BinaryProblem;
 import org.uma.jmetal.problem.ConstrainedProblem;
 import org.uma.jmetal.problem.impl.AbstractBinaryProblem;
@@ -97,11 +102,10 @@ public class Problema implements BinaryProblem {
      * It reads an ARFF or CSV file using the WEKA API.
      * @param path The path of the dataset
      */
-    public void readDataset(String path) {
+    public void readDataset(String path, SparkSession spark) {
 
         // First, read the dataset and select the class
         DataSource source;
-        seed = 1; // cambiar
         numberOfViolatedConstraints = new NumberOfViolatedConstraints<>();
         overallConstraintViolation = new OverallConstraintViolation<>();
         rand = JMetalRandom.getInstance();
@@ -111,6 +115,7 @@ public class Problema implements BinaryProblem {
         try {
             source = new DataSource(path);
             dataset = source.getDataSet();
+
             // Con esto se le fija como clase el ultimo atributo si no estuviera especificado
             if (dataset.classIndex() == -1)
                 dataset.setClassIndex(dataset.numAttributes() - 1);
@@ -122,16 +127,12 @@ public class Problema implements BinaryProblem {
                 if(i != dataset.classIndex() && dataset.attribute(i).isNumeric()){
                    double max = getMax(i);
                    double min = getMin(i);
-                   fuzzySets.add(generateLinguistcLabels(min, max));
+                  // fuzzySets.add(generateLinguistcLabels(min, max));
                 } else {
                     fuzzySets.add(null);
                 }
             }
-           /* evaluator = new EvaluatorIndDNF();
-            ArrayList<QualityMeasure> objs = new ArrayList<>();
-            objs.add(new WRAccNorm());
-            objs.add(new SuppDiff());
-            evaluator.setObjectives(objs);*/
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -313,7 +314,7 @@ public class Problema implements BinaryProblem {
      * @param min
      * @return
      */
-    private ArrayList<Fuzzy> generateLinguistcLabels(double min, double max){
+   /* private ArrayList<Fuzzy> generateLinguistcLabels(double min, double max){
         double marca = (max - min) / ((double)(numLabels -1));
         double cutPoint = min + marca / 2;
         ArrayList<Fuzzy> sets = new ArrayList<>();
@@ -349,7 +350,7 @@ public class Problema implements BinaryProblem {
         }
 
         return sets;
-    }
+    }*/
 
 
 

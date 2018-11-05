@@ -31,6 +31,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         population = createInitialPopulation();
         population = evaluatePopulation(population);
         initProgress();
+
         while (!isStoppingConditionReached()) {
             matingPopulation = selection(population);
             offspringPopulation = reproduction(matingPopulation);
