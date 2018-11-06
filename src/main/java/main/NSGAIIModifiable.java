@@ -1,11 +1,13 @@
 package main;
 
+import evaluator.Evaluator;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.operator.CrossoverOperator;
 import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.operator.SelectionOperator;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
+import org.uma.jmetal.util.comparator.DominanceComparator;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 
 import java.util.*;
@@ -19,8 +21,8 @@ import java.util.*;
  */
 public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
-    public NSGAIIModifiable(Problem problem, int maxEvaluations, int populationSize, CrossoverOperator crossoverOperator, MutationOperator mutationOperator, SelectionOperator selectionOperator, SolutionListEvaluator evaluator) {
-        super(problem, maxEvaluations, populationSize, crossoverOperator, mutationOperator, selectionOperator, evaluator);
+    public NSGAIIModifiable(Problem problem, int maxEvaluations, int populationSize, CrossoverOperator crossoverOperator, MutationOperator mutationOperator, SelectionOperator selectionOperator, Comparator<S> comparator, SolutionListEvaluator evaluator) {
+        super(problem, maxEvaluations, populationSize, crossoverOperator, mutationOperator, selectionOperator, comparator, evaluator);
     }
 
     @Override
@@ -28,9 +30,9 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         List<S> offspringPopulation;
         List<S> matingPopulation;
 
+        initProgress();
         population = createInitialPopulation();
         population = evaluatePopulation(population);
-        initProgress();
 
         while (!isStoppingConditionReached()) {
             matingPopulation = selection(population);
@@ -69,5 +71,12 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         super.updateProgress();
 
         // Aqui, para el NSGA-II adaptativo, actualizar los porcentajes de probabilidad para la ejecución de cada método
+    }
+
+    @Override protected void initProgress() {
+        evaluations = getMaxPopulationSize();
+        if(evaluator instanceof Evaluator){
+            ((Evaluator<S>) evaluator).initialise(this.problem);
+        }
     }
 }

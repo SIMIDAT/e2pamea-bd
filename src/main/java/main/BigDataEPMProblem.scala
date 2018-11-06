@@ -11,6 +11,7 @@ import org.apache.spark.util.collection.BitSet
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.solution.impl.DefaultBinarySolution
+import org.uma.jmetal.util.binarySet.BinarySet
 import org.uma.jmetal.util.pseudorandom.JMetalRandom
 import org.uma.jmetal.util.solutionattribute.impl.{NumberOfViolatedConstraints, OverallConstraintViolation}
 import weka.core.Instances
@@ -18,9 +19,10 @@ import weka.core.Instances
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Class that define an Emerging pattern mining problem in JMetal
+  * Class that define a Big Data Emerging pattern mining problem in JMetal framework
+  *
   */
-class EPMProblem extends BinaryProblem{
+class BigDataEPMProblem extends BinaryProblem{
 
   val RANDOM_INITIALISATION: Int = 0
   val ORIENTED_INITIALISATION: Int = 1
@@ -30,12 +32,15 @@ class EPMProblem extends BinaryProblem{
     */
   private var dataset: DataFrame = null
 
+  /**
+    * The attributes information
+    */
   private var attributes: Array[Attribute] = null
 
   /**
     * The class of the problem for the extraction of rules.
     */
-  private var clase: Clase[BinarySolution] = null
+  private var clase: Clase[BinarySolution] = new Clase[BinarySolution]()
   private var clas: Int = 0
 
 
@@ -82,6 +87,60 @@ class EPMProblem extends BinaryProblem{
     */
   val rand: JMetalRandom = JMetalRandom.getInstance()
 
+  /**
+    * The Spark Session employed in this problem
+    */
+  var spark: SparkSession = null
+
+  private var numPartitions: Int = 0
+
+  /**
+    * Get the corresponding fuzzy set j for the variable i
+    * @param i
+    * @param j
+    * @return
+    */
+  def getFuzzySet(i: Int, j: Int): Fuzzy = {
+    fuzzySets(i)(j)
+  }
+
+  /**
+    * It returns the belonging degree of the value x to the fuzzy set j of the variable i
+    * @param i
+    * @param j
+    * @param x
+    */
+  def calculateBelongingDegree(i: Int, j: Int, x: Double): Double ={
+    fuzzySets(i)(j).getBelongingDegree(x)
+  }
+
+  /**
+    * Sets the given fuzzy set for in the position j for the variable i.
+    * @param i
+    * @param j
+    * @param set
+    */
+  def setFuzzySet(i: Int, j: Int, set: Fuzzy): Unit ={
+    fuzzySets(i)(j) = set
+  }
+
+  def getDataset: DataFrame = dataset
+
+  def getAttributes: Array[Attribute] = attributes
+
+  def getNumPartitions(): Int = numPartitions
+
+  def getNumLabels(): Int = numLabels
+
+  def setNumLabels(labels: Int) = {numLabels = labels}
+
+  def getInitialisationMethod(): Int = initialisationMethod
+
+  def setInitialisationMethod(method: Int) = initialisationMethod = method
+
+  def setSparkSession(sp: SparkSession) = {
+    this.spark = sp
+  }
 
   override def getNumberOfBits(index: Int): Int = {
     if(attributes(index).isNumeric){
@@ -111,11 +170,10 @@ class EPMProblem extends BinaryProblem{
 
   override def createSolution(): BinarySolution = {
     // Create a random individual
-    val sol = if (initialisationMethod == RANDOM_INITIALISATION) { // By default, individuals are initialised at random
+    val sol: BinarySolution = if (initialisationMethod == RANDOM_INITIALISATION) { // By default, individuals are initialised at random
       new DefaultBinarySolution(this)
-    }
-    else if (initialisationMethod == ORIENTED_INITIALISATION) { // Oriented initialisation
-      OrientedInitialisation(rand, 0.25)
+    } else { //if (initialisationMethod == ORIENTED_INITIALISATION) { // Oriented initialisation
+      OrientedInitialisation(0.25)
     }
 
     clase.setAttribute(sol, clas)
@@ -131,6 +189,8 @@ class EPMProblem extends BinaryProblem{
     * @return
     */
   def readDataset(path: String, numPartitions: Int, spark: SparkSession): Unit = {
+    this.spark = spark
+    this.numPartitions = numPartitions
     val listValues = spark.sparkContext.textFile(path)
       .filter(x => x.startsWith("@"))
       .filter(x => !x.startsWith("@relation"))
@@ -168,10 +228,10 @@ class EPMProblem extends BinaryProblem{
 
       val attr = if (nominal) {
         val values = dataset.select(x).distinct().map(x => x.getString(0)).collect()
-        new Attribute(x, nominal,0,0,values.toList)
+        new Attribute(x, nominal,0,0,0,values.toList)
       } else {
         val a = dataset.select(min(x), max(x)).head()
-        new Attribute(x, nominal, a.getDouble(0), a.getDouble(1), null)
+        new Attribute(x, nominal, a.getDouble(0), a.getDouble(1), numLabels, null)
       }
       attr
     })
@@ -261,45 +321,47 @@ class EPMProblem extends BinaryProblem{
     */
   def OrientedInitialisation(pctVariables: Double): DefaultBinarySolution = {
     val sol = new DefaultBinarySolution(this)
-    val maxVariablesToInitialise = Math.round(pctVariables * (attributes.length - 1))
+    val maxVariablesToInitialise = Math.round(pctVariables * getNumberOfVariables)
     val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt + 1)
 
-    val initialised = new BitSet(attributes.length -1)
+    val initialised = new BitSet(getNumberOfVariables)
     var varInitialised = 0
 
     while(varInitialised != varsToInit){
-      val value = rand.nextInt(0 , attributes.length - 1)
-      if (!initialised.get(var)){
-        BinarySet value = new BinarySet(sol.getNumberOfBits(var));
-        for(int i = 0; i < sol.getNumberOfBits(var);i++){
-          if(rand.nextBoolean())
-            value.set(i);
+      val value = rand.nextInt(0 , getNumberOfVariables)
+      if (!initialised.get(value)){
+        val set = new BinarySet(sol.getNumberOfBits(value))
+        for(i <- 0 until sol.getTotalNumberOfBits){
+          if(rand.nextDouble(0.0, 1.0) <= 0.5)
+            set.set(i)
           else
-            value.clear(i);
+            set.clear(i)
         }
         // check if the generated variable is empty and fix it if necessary
-        if(value.cardinality() == 0){
-          value.set(rand.nextInt(sol.getNumberOfBits(var)));
-        } else  if(value.cardinality() == sol.getNumberOfBits(var)){
-          value.clear(rand.nextInt(sol.getNumberOfBits(var)));
+        if(set.cardinality() == 0){
+          set.set(rand.nextInt(0, sol.getNumberOfBits(value)))
+        } else  if(set.cardinality() == sol.getNumberOfBits(value)){
+          set.clear(rand.nextInt(0, sol.getNumberOfBits(value)))
         }
-        sol.setVariableValue(var,value);
-        varInitialised++;
-        initialised.set(var);
+
+        sol.setVariableValue(value,set)
+        varInitialised += 1
+        initialised.set(value)
       }
     }
-
-    sol.getVariableValue(dataset.classIndex()).clear();
-    sol.getVariableValue(dataset.classIndex()).set(rand.nextInt(dataset.numClasses()));
 
     // clear the non-initialised variables
-    for(int i = 0; i < sol.getNumberOfVariables(); i++){
+    for(i <- 0 until getNumberOfVariables){
       if(!initialised.get(i)){
-        sol.getVariableValue(i).clear();
+        sol.getVariableValue(i).clear()
       }
     }
 
-    return sol;
+    return sol
   }
+
+
+
+
 
 }

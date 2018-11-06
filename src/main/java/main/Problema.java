@@ -1,26 +1,15 @@
 package main;
 
 import evaluator.Evaluator;
-import evaluator.EvaluatorIndDNF;
-import evaluator.EvaluatorIndDNFImproved;
 import fuzzy.Fuzzy;
-import fuzzy.TriangularFuzzySet;
-import org.apache.spark.SparkContext;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.uma.jmetal.problem.BinaryProblem;
-import org.uma.jmetal.problem.ConstrainedProblem;
-import org.uma.jmetal.problem.impl.AbstractBinaryProblem;
 import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.impl.DefaultBinarySolution;
 import org.uma.jmetal.util.binarySet.BinarySet;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 import org.uma.jmetal.util.solutionattribute.impl.NumberOfViolatedConstraints;
 import org.uma.jmetal.util.solutionattribute.impl.OverallConstraintViolation;
-import qualitymeasures.QualityMeasure;
-import qualitymeasures.SuppDiff;
-import qualitymeasures.WRAccNorm;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 

@@ -92,7 +92,7 @@ public abstract class Evaluator<S extends Solution> implements SolutionListEvalu
      * @param individual
      * @return
      */
-    public abstract boolean isEmpty(Solution individual);
+    public abstract boolean isEmpty(Solution<S> individual);
 
     /**
      * It returns whether a given variable of the individual participates in the pattern or not.
@@ -101,7 +101,14 @@ public abstract class Evaluator<S extends Solution> implements SolutionListEvalu
      * @param var
      * @return
      */
-    public abstract boolean participates(Solution individual, int var);
+    public abstract boolean participates(Solution<S> individual, int var);
 
+
+    /**
+     * Initiailises any initial configuration of this evaluator according to the problem
+     *
+     * @param problem
+     */
+    public abstract void initialise(Problem<S> problem);
 
 }

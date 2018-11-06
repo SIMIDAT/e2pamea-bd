@@ -1,6 +1,7 @@
-import evaluator.EvaluatorIndDNF
+import evaluator.{EvaluatorIndDNF, EvaluatorMapReduce}
 import main._
 import operators.crossover.NPointCrossover
+import operators.mutation.BiasedMutationDNF
 import org.apache.avro.generic.GenericData
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -27,7 +28,7 @@ object Main {
     spark.sparkContext.setLogLevel("ERROR")
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
-    val problem = ProblemUtils.loadProblem[BinaryProblem]("main.EPMProblem").asInstanceOf[EPMProblem]
+    val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     problem.readDataset("Air.arff", 4, spark)
     problem.getAttributes(spark)
@@ -35,7 +36,7 @@ object Main {
 
 
     // Se elige el evaluador
-    val evaluador = new EvaluatorIndDNF(problem)
+    val evaluador = new EvaluatorMapReduce()
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
@@ -55,12 +56,22 @@ object Main {
     val dominanceComparator = new DominanceComparator[BinarySolution]().reversed()
 
     // Se construye el algoritmo genetico con los datos que se han introducido.
-    val algorithm = new NSGAIIBuilder[BinarySolution](problem, crossover.asInstanceOf[CrossoverOperator[BinarySolution]], mutation)
+    /*val algorithm = new NSGAIIBuilder[BinarySolution](problem, crossover.asInstanceOf[CrossoverOperator[BinarySolution]], mutation)
       .setSelectionOperator(selection)
       .setMaxEvaluations(25000)
       .setPopulationSize(100).setDominanceComparator(dominanceComparator)
       .setSolutionListEvaluator(evaluador)
-      .build
+      .build*/
+    val algorithm = new NSGAIIModifiableBuilder[BinarySolution]
+      .setProblem(problem)
+      .setCrossoverOperator(crossover.asInstanceOf[CrossoverOperator[BinarySolution]])
+      .setMutationOperator(mutation)
+      .setSelectionOperator(selection)
+      .setMaxEvaluations(25000)
+      .setPopulationSize(100)
+      .setDominanceComparator(dominanceComparator)
+      .setEvaluator(evaluador)
+      .build()
 
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
 

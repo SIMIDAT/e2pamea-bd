@@ -2,7 +2,6 @@ package evaluator;
 
 import fuzzy.Fuzzy;
 import main.Clase;
-import main.IndDNF;
 import main.Problema;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.BinarySolution;
@@ -135,6 +134,11 @@ public class EvaluatorIndDNF extends Evaluator<BinarySolution> {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public void initialise(Problem<BinarySolution> problem) {
+
     }
 
 

@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 abstract class Fuzzy(val values: ArrayBuffer[Double],
-                     var y: Double) {
+                     var y: Double) extends Serializable {
 
   def getY: Double = y
 
