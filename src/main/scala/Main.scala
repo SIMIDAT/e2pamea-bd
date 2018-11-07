@@ -1,3 +1,5 @@
+import java.util
+
 import evaluator.{EvaluatorIndDNF, EvaluatorMapReduce}
 import main._
 import operators.crossover.NPointCrossover
@@ -17,6 +19,7 @@ import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDi
 import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import org.apache.spark.sql.functions.{max, min}
+import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
 
 
 object Main {
@@ -24,19 +27,25 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     // Se define el entorno de Spark
-    val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
-    problem.readDataset("Air.arff", 4, spark)
+    println("Reading data...")
+    problem.readDataset("iris.arff", 2, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
+    problem.rand.setSeed(1)
 
 
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
+    val objectives = new util.ArrayList[QualityMeasure]()
+    objectives.add(new WRAccNorm)
+    objectives.add(new SuppDiff)
+    evaluador.setObjectives(objectives)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx

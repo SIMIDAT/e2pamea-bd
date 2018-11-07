@@ -193,10 +193,10 @@ class BigDataEPMProblem extends BinaryProblem{
     this.numPartitions = numPartitions
     val listValues = spark.sparkContext.textFile(path)
       .filter(x => x.startsWith("@"))
-      .filter(x => !x.startsWith("@relation"))
-      .filter(x => !x.startsWith("@data")).map(x => {
-      val values = x.split(" ")
-      if (values(2).equalsIgnoreCase("numeric")) {
+      .filter(x => !x.toLowerCase.startsWith("@relation"))
+      .filter(x => !x.toLowerCase.startsWith("@data")).map(x => {
+      val values = x.split("\\s+")
+      if (values(2).equalsIgnoreCase("numeric") | values(2).equalsIgnoreCase("real")) {
         StructField(values(1), DoubleType, true)
       } else {
         StructField(values(1), StringType, true)

@@ -74,9 +74,34 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
     }
 
     @Override protected void initProgress() {
+        System.out.println("Initialising the Fast-MOEA-BD algorithm...");
         evaluations = getMaxPopulationSize();
         if(evaluator instanceof Evaluator){
             ((Evaluator<S>) evaluator).initialise(this.problem);
         }
+    }
+
+    @Override
+    protected List<S> reproduction(List<S> population) {
+        // Aqui va el metodo de reproduccion que se usa en el NSGA-IIa
+        int numberOfParents = crossoverOperator.getNumberOfRequiredParents() ;
+
+        checkNumberOfParents(population, numberOfParents);
+
+        List<S> offspringPopulation = new ArrayList<>(getMaxPopulationSize());
+        for (int i = 0; i < getMaxPopulationSize(); i += numberOfParents) {
+            List<S> parents = new ArrayList<>(numberOfParents);
+            for (int j = 0; j < numberOfParents; j++) {
+                parents.add(population.get(i+j));
+            }
+
+            List<S> offspring = crossoverOperator.execute(parents);
+
+            for(S s: offspring){
+                mutationOperator.execute(s);
+                offspringPopulation.add(s);
+            }
+        }
+        return offspringPopulation;
     }
 }
