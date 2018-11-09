@@ -29,12 +29,21 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     */
   var bitSets: RDD[(ArrayBuffer[BitSet], Long)] = null
 
+
+  /**
+    * The bitsets for the variables in a non distributed environment
+    */
   var sets: ArrayBuffer[ArrayBuffer[BitSet]] = null
 
   /**
     * The bitsets for the determination of the belonging of the examples for each class
     */
   var classes: ArrayBuffer[BitSet] = null
+
+  /**
+    * It determines if the evaluation must be performed using the RDD (distributed) or the ArrayBuffer (local)
+    */
+  var bigDataProcessing = true
 
   /**
     * It initialises the bitset structure employed for the improved evaluation.
@@ -115,9 +124,16 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       //println("total sample: " + length + "  class 0: " + classes(0).cardinality() + "  class 1: " + classes(1).cardinality())
       super.setProblem(problema)
-      bitSets = problema.spark.sparkContext.parallelize(sets, problema.getNumPartitions()).zipWithIndex()
-      bitSets.cache()
-      println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(bitSets) / Math.pow(1000, 2)) + " MB.")
+      if(bigDataProcessing){
+        bitSets = problema.spark.sparkContext.parallelize(sets, problema.getNumPartitions()).zipWithIndex()
+        bitSets.cache()
+        sets = null
+        println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(bitSets) / Math.pow(1000, 2)) + " MB.")
+      } else {
+        println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(sets) / Math.pow(1000, 2)) + " MB.")
+
+      }
+
 
     }
   }
@@ -126,7 +142,6 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     // In the map phase, it is returned an array of bitsets for each variable of the problem for all the individuals
     val t_ini = System.currentTimeMillis()
 
-    val bigDataProcessing = true
     val coverages = if (bigDataProcessing) {
       calculateCoveragesBigData(solutionList, problem)
     } else {
@@ -298,7 +313,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
                 ors(i) = ors(i) | sets(j)
               }
             }
-          } else {
+          } else { // If the variable does not participe, fill the bitset with 1 so the and operations are not affected.
             ors(i).setUntil(ors(i).capacity)
           }
         }
@@ -314,5 +329,11 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     })
 
     coverages
+  }
+
+
+
+  def setBigDataProcessing(processing : Boolean): Unit ={
+    bigDataProcessing = processing
   }
 }

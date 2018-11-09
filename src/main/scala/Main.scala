@@ -34,7 +34,7 @@ object Main {
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     println("Reading data...")
-    problem.readDataset("iris.arff", 2, spark)
+    problem.readDataset("SUSY.arff", 2, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
     problem.rand.setSeed(1)
@@ -46,6 +46,7 @@ object Main {
     objectives.add(new WRAccNorm)
     objectives.add(new SuppDiff)
     evaluador.setObjectives(objectives)
+    evaluador.setBigDataProcessing(true)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
