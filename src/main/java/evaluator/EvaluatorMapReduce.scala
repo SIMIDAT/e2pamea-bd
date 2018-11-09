@@ -87,7 +87,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
               // for each label/value
               if (attrs(i).isNumeric) {
                 // Numeric variable, fuzzy computation
-                if (problema.calculateBelongingDegree(i, j, row.getDouble(i)) > 0) { // Cambiar por grado pertenecia máximo respecto al resto de labels
+                if (problema.calculateBelongingDegree(i, j, row.getDouble(i)) >= getMaxBelongingDegree(problema, i, row.getDouble(i))) {
                   partialSet(i)(j).set(index)
                 } else {
                   partialSet(i)(j).unset(index)
@@ -335,5 +335,28 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
   def setBigDataProcessing(processing : Boolean): Unit ={
     bigDataProcessing = processing
+  }
+
+
+  /**
+    * If returns the maximum belonging degree of the LLs defined for a variable
+    * @param problem
+    * @param variable
+    * @param x
+    */
+  def getMaxBelongingDegree(problem: Problem[BinarySolution], variable: Int,  x: Double): Double ={
+    val problema = problem.asInstanceOf[BigDataEPMProblem]
+    val tope = 10E-13
+
+    var max = Double.NegativeInfinity
+
+    for(i <- 0 until problema.getAttributes(variable).numValues){
+      val a = problema.calculateBelongingDegree(variable, i, x)
+      if(a > max){
+        max = a
+      }
+    }
+
+    max - tope
   }
 }
