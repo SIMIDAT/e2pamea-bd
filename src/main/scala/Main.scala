@@ -34,7 +34,7 @@ object Main {
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     println("Reading data...")
-    problem.readDataset("SUSY.arff", 2, spark)
+    problem.readDataset("iris.arff", 2, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
     problem.rand.setSeed(1)
@@ -50,12 +50,12 @@ object Main {
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
-    val crossoverProbability: Double = 0.9
+    val crossoverProbability: Double = 1.0
     val crossoverDistributionIndex: Double = 20.0
     val crossover = new NPointCrossover[BinarySolution](crossoverProbability, 2) //new HUXCrossover(crossoverProbability)
 
     // Operador de mutacion
-    val mutationProbability: Double = 1.0 / problem.getNumberOfVariables
+    val mutationProbability: Double = 1.0
     val mutationDistributionIndex: Double = 20.0
     val mutation = new BiasedMutationDNF(mutationProbability) //new PolynomialMutation(mutationProbability, mutationDistributionIndex)
 
@@ -81,6 +81,7 @@ object Main {
       .setPopulationSize(100)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
+      .addOperator(new HUXCrossover(1))
       .build()
 
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())

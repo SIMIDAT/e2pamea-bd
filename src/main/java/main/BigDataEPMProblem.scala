@@ -3,6 +3,7 @@ package main
 import java.util
 import java.util.ArrayList
 
+import attributes.Clase
 import fuzzy.{Fuzzy, TriangularFuzzySet}
 import org.apache.spark.sql.functions.{max, min}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -14,6 +15,7 @@ import org.uma.jmetal.solution.impl.DefaultBinarySolution
 import org.uma.jmetal.util.binarySet.BinarySet
 import org.uma.jmetal.util.pseudorandom.JMetalRandom
 import org.uma.jmetal.util.solutionattribute.impl.{NumberOfViolatedConstraints, OverallConstraintViolation}
+import utils.Attribute
 import weka.core.Instances
 
 import scala.collection.mutable.ArrayBuffer
@@ -64,7 +66,7 @@ class BigDataEPMProblem extends BinaryProblem{
   /**
     * The seed of the random number generator
     */
-  private var seed: Int = 0
+  private var seed: Int = 1
 
   /**
     * The fuzzy sets stored for each numeric variable
@@ -177,9 +179,15 @@ class BigDataEPMProblem extends BinaryProblem{
     }
 
     clase.setAttribute(sol, clas)
+
+    // The next individual belongs to a different class (last attribute), this is for ensuring we have individuals for all classes.
+    clas = (clas + 1) % attributes.last.numValues
+
     return sol
   }
 
+
+  def getNumberOfClasses: Int = {attributes.last.numValues}
 
   /**
     * It reads a dataset and it stores it in the dataset field

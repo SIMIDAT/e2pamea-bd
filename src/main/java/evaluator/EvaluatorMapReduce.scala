@@ -2,8 +2,9 @@ package evaluator
 
 import java.util
 
+import attributes.Clase
 import fuzzy.Fuzzy
-import main.{BigDataEPMProblem, Clase}
+import main.BigDataEPMProblem
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row

@@ -1,4 +1,4 @@
-package main;
+package attributes;
 
 
 import org.uma.jmetal.solution.Solution;

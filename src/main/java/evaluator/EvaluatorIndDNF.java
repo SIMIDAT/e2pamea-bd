@@ -1,7 +1,7 @@
 package evaluator;
 
 import fuzzy.Fuzzy;
-import main.Clase;
+import attributes.Clase;
 import main.Problema;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.BinarySolution;
@@ -10,7 +10,6 @@ import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.impl.DefaultBinarySolution;
 import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
-import scala.util.hashing.Hashing;
 import weka.core.Instances;
 
 import java.util.ArrayList;

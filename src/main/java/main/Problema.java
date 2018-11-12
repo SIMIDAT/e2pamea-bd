@@ -1,5 +1,6 @@
 package main;
 
+import attributes.Clase;
 import evaluator.Evaluator;
 import fuzzy.Fuzzy;
 import org.apache.spark.sql.SparkSession;
