@@ -63,7 +63,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             contributions.add(0);
         }
         setElitePopulation(new ArrayList<>());
-        reinitialisation = new NonEvolutionReinitialisation<>(new Double(maxEvaluations * 0.1).intValue(), ((BigDataEPMProblem) problem).getNumberOfClasses(), ((BigDataEPMProblem) problem).numExamples());
+        reinitialisation = new NonEvolutionReinitialisation<>(10, ((BigDataEPMProblem) problem).getNumberOfClasses(), ((BigDataEPMProblem) problem).numExamples());
     }
 
     @Override
@@ -90,7 +90,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
             for(int i = 0; i < numClasses; i++) {
                 if (reinitialisation.checkReinitialisation(population, problem, generation, i )) {
-                    population = reinitialisation.doReinitialisation(population, problem, generation, i);
+                    population = reinitialisation.doReinitialisation(population, problem, generation, i, this);
                 }
             }
 
@@ -273,5 +273,9 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
     public void setElitePopulation(List<S> elitePopulation) {
         this.elitePopulation = elitePopulation;
+    }
+
+    public SolutionListEvaluator<S> getEvaluator(){
+        return super.evaluator;
     }
 }

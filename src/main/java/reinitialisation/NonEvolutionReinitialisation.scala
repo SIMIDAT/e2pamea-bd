@@ -4,6 +4,8 @@ import java.util
 import java.util.stream.Collectors
 
 import attributes.{Clase, Coverage}
+import evaluator.EvaluatorMapReduce
+import filters.TokenCompetitionFilter
 import main.NSGAIIModifiable
 import utils.BitSet
 import org.uma.jmetal.problem.Problem
@@ -62,7 +64,11 @@ class NonEvolutionReinitialisation[S <: Solution[_]](threshold: Int, numClasses:
     return null
   }
 
-  def doReinitialisation(solutionList: util.List[S], problem: Problem[S], generationNumber: Int, algorithm: NSGAIIModifiable[S]): util.List[S] = {
-    
+  def doReinitialisation(solutionList: util.List[S], problem: Problem[S], generationNumber: Int, classNumber: Int, algorithm: NSGAIIModifiable[S]): util.List[S] = {
+    val filter = new TokenCompetitionFilter[S]
+
+    val newPop = filter.doFilter(solutionList, algorithm.getEvaluator.asInstanceOf[EvaluatorMapReduce])
+
+    newPop
   }
 }

@@ -2,7 +2,7 @@ package evaluator
 
 import java.util
 
-import attributes.{Clase, Coverage}
+import attributes.{Clase, Coverage, DiversityMeasure}
 import fuzzy.Fuzzy
 import main.BigDataEPMProblem
 import org.apache.spark.SparkContext
@@ -12,7 +12,7 @@ import org.apache.spark.util.SizeEstimator
 import org.json4s.jsonwritable
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
-import qualitymeasures.ContingencyTable
+import qualitymeasures.{ContingencyTable, WRAccNorm}
 import utils.BitSet
 import weka.core.Instances
 
@@ -153,6 +153,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     for (i <- coverages.indices) {
       val ind = solutionList.get(i)
       val cove = new Coverage[BinarySolution]()
+      val diversity = new DiversityMeasure[BinarySolution]()
       cove.setAttribute(ind, coverages(i))
       if (!isEmpty(ind)) {
         val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
@@ -170,6 +171,9 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         val fn = (~coverages(i)) & classes(clase)
 
         val table = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
+        val div = new WRAccNorm()
+        div.calculateValue(table)
+        diversity.setAttribute(ind, div)
 
         val objectives = super.calculateMeasures(table)
         for (j <- 0 until objectives.size()) {
