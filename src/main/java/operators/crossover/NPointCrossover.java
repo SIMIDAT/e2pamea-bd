@@ -15,20 +15,22 @@ import java.util.List;
  * fixed by agvico.
  */
 public class NPointCrossover<T> implements CrossoverOperator<Solution<T>> {
-    private final JMetalRandom randomNumberGenerator = JMetalRandom.getInstance();
+    private JMetalRandom randomNumberGenerator;
     private final double probability;
     private final int crossovers;
 
-    public NPointCrossover(double probability, int crossovers) {
+    public NPointCrossover(double probability, int crossovers, JMetalRandom rand) {
         if (probability < 0.0) throw new JMetalException("Probability can't be negative");
         if (crossovers < 1) throw new JMetalException("Number of crossovers is less than one");
         this.probability = probability;
         this.crossovers = crossovers;
+        this.randomNumberGenerator = rand;
     }
 
-    public NPointCrossover(int crossovers) {
+    public NPointCrossover(int crossovers, JMetalRandom rand) {
         this.crossovers = crossovers;
         this.probability = 1.0;
+        this.randomNumberGenerator = rand;
     }
 
     public double getCrossoverProbability() {

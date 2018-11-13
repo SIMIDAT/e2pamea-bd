@@ -89,6 +89,11 @@ public class Problema implements BinaryProblem {
     public JMetalRandom rand;
 
     /**
+     * The number of examples of the problem
+     */
+    private int numExamples;
+
+    /**
      * It reads an ARFF or CSV file using the WEKA API.
      * @param path The path of the dataset
      */

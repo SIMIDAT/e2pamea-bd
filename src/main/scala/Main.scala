@@ -19,6 +19,7 @@ import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDi
 import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import org.apache.spark.sql.functions.{max, min}
+import org.uma.jmetal.util.pseudorandom.JMetalRandom
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
 
 
@@ -52,12 +53,12 @@ object Main {
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
     val crossoverProbability: Double = 1.0
     val crossoverDistributionIndex: Double = 20.0
-    val crossover = new NPointCrossover[BinarySolution](crossoverProbability, 2) //new HUXCrossover(crossoverProbability)
+    val crossover = new NPointCrossover[BinarySolution](crossoverProbability, 2, problem.rand) //new HUXCrossover(crossoverProbability)
 
     // Operador de mutacion
     val mutationProbability: Double = 1.0
     val mutationDistributionIndex: Double = 20.0
-    val mutation = new BiasedMutationDNF(mutationProbability) //new PolynomialMutation(mutationProbability, mutationDistributionIndex)
+    val mutation = new BiasedMutationDNF(mutationProbability, problem.rand) //new PolynomialMutation(mutationProbability, mutationDistributionIndex)
 
     // Operador de seleccion
     val selection = new BinaryTournamentSelection[BinarySolution](new RankingAndCrowdingDistanceComparator[BinarySolution])
@@ -81,7 +82,7 @@ object Main {
       .setPopulationSize(100)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
-      .addOperator(new HUXCrossover(1))
+      .addOperator(new HUXCrossover(1, () => problem.rand.nextDouble()))
       .build()
 
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())

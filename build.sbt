@@ -2,10 +2,10 @@ name := "pruebaJMetal"
 
 version := "0.1"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.12.6"
 
 val jMetalVersion = "5.6"
-val sparkVersion = "2.3.0"
+val sparkVersion = "2.4.0"
 
 mainClass in Compile := Some("Main")
 

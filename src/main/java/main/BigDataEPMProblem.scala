@@ -94,6 +94,8 @@ class BigDataEPMProblem extends BinaryProblem{
     */
   var spark: SparkSession = null
 
+  var numExamples: Int = 0
+
   private var numPartitions: Int = 0
 
   /**
@@ -215,6 +217,7 @@ class BigDataEPMProblem extends BinaryProblem{
 
     dataset = spark.read.option("header", "false").option("comment", "@").schema(schema).csv(path)
     dataset.cache()
+    numExamples = dataset.count().toInt
   }
 
 

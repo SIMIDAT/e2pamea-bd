@@ -1,7 +1,6 @@
 package main;
 
 import attributes.Clase;
-import attributes.GeneratedOperator;
 import evaluator.Evaluator;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.operator.CrossoverOperator;
@@ -11,9 +10,9 @@ import org.uma.jmetal.operator.SelectionOperator;
 import org.uma.jmetal.operator.impl.selection.RankingAndCrowdingSelection;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
-import org.uma.jmetal.util.comparator.DominanceComparator;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
+import reinitialisation.NonEvolutionReinitialisation;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,9 +26,6 @@ import java.util.stream.Collectors;
  */
 public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
-    /**
-     * The elite population of this algorithm
-     */
     private List<S> elitePopulation;
 
     /**
@@ -47,6 +43,9 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
      */
     private ArrayList<Integer> contributions;
 
+
+    private NonEvolutionReinitialisation<S> reinitialisation;
+
     /**
      * The minimum count threshold to be set for updating the probabilities.
      */
@@ -63,7 +62,8 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             applicationProbabilities.add(0.0);
             contributions.add(0);
         }
-        elitePopulation = new ArrayList<>();
+        setElitePopulation(new ArrayList<>());
+        reinitialisation = new NonEvolutionReinitialisation<>(new Double(maxEvaluations * 0.1).intValue(), ((BigDataEPMProblem) problem).getNumberOfClasses(), ((BigDataEPMProblem) problem).numExamples());
     }
 
     @Override
@@ -77,6 +77,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
 
         // Evolutionary process MAIN LOOP:
+        int generation = 0;
         while (!isStoppingConditionReached()) {
             //matingPopulation = selection(population);
             offspringPopulation = reproduction(population);
@@ -86,9 +87,16 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             population = replacement(population, offspringPopulation);
 
             // Aquí cosas adicionales como la reinicialización
+            int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
+            for(int i = 0; i < numClasses; i++) {
+                if (reinitialisation.checkReinitialisation(population, problem, generation, i )) {
+                    population = reinitialisation.doReinitialisation(population, problem, generation, i);
+                }
+            }
 
             // No tocar esto (se actualiza el número de evaluaciones
             updateProgress();
+            generation++;
         }
 
     }
@@ -256,4 +264,14 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         return index;
     }
 
+    /**
+     * The elite population of this algorithm
+     */
+    public List<S> getElitePopulation() {
+        return elitePopulation;
+    }
+
+    public void setElitePopulation(List<S> elitePopulation) {
+        this.elitePopulation = elitePopulation;
+    }
 }

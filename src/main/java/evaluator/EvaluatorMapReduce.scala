@@ -2,7 +2,7 @@ package evaluator
 
 import java.util
 
-import attributes.Clase
+import attributes.{Clase, Coverage}
 import fuzzy.Fuzzy
 import main.BigDataEPMProblem
 import org.apache.spark.SparkContext
@@ -152,6 +152,8 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     // Calculate the contingency table for each individual
     for (i <- coverages.indices) {
       val ind = solutionList.get(i)
+      val cove = new Coverage[BinarySolution]()
+      cove.setAttribute(ind, coverages(i))
       if (!isEmpty(ind)) {
         val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
 

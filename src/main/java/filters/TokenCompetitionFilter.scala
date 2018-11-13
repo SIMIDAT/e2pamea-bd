@@ -1,0 +1,5 @@
+package filters
+
+class TokenCompetitionFilter {
+
+}
