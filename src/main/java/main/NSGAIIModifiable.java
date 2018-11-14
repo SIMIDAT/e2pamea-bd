@@ -2,6 +2,8 @@ package main;
 
 import attributes.Clase;
 import evaluator.Evaluator;
+import evaluator.EvaluatorMapReduce;
+import filters.TokenCompetitionFilter;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.operator.CrossoverOperator;
 import org.uma.jmetal.operator.MutationOperator;
@@ -13,6 +15,7 @@ import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 import reinitialisation.NonEvolutionReinitialisation;
+import scala.math.Numeric;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +66,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             contributions.add(0);
         }
         setElitePopulation(new ArrayList<>());
-        reinitialisation = new NonEvolutionReinitialisation<>(10, ((BigDataEPMProblem) problem).getNumberOfClasses(), ((BigDataEPMProblem) problem).numExamples());
+        reinitialisation = new NonEvolutionReinitialisation<>(((Double) (maxEvaluations * 0.25)).intValue(), ((BigDataEPMProblem) problem).getNumberOfClasses(), ((BigDataEPMProblem) problem).numExamples());
     }
 
     @Override
@@ -77,7 +80,6 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
 
         // Evolutionary process MAIN LOOP:
-        int generation = 0;
         while (!isStoppingConditionReached()) {
             //matingPopulation = selection(population);
             offspringPopulation = reproduction(population);
@@ -89,16 +91,31 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             // Aquí cosas adicionales como la reinicialización
             int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
             for(int i = 0; i < numClasses; i++) {
-                if (reinitialisation.checkReinitialisation(population, problem, generation, i )) {
-                    population = reinitialisation.doReinitialisation(population, problem, generation, i, this);
+                if (reinitialisation.checkReinitialisation(population, problem, evaluations, i )) {
+                    population = reinitialisation.doReinitialisation(population, problem, evaluations, i, this);
+                    population = evaluatePopulation(population);
+                    evaluations += getMaxPopulationSize();
                 }
             }
 
-            // No tocar esto (se actualiza el número de evaluaciones
+            // No tocar esto (se actualiza el número de evaluaciones y las probabilidades de aplicación de cada método)
             updateProgress();
-            generation++;
         }
 
+        // At the end. Perform a token competition procedure and return
+        int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
+        TokenCompetitionFilter<S> tc = new TokenCompetitionFilter<>();
+
+        List<S> newElite = new ArrayList<>();
+        for(int i = 0; i < numClasses; i++){
+            final int clas = i;
+            List<S> pop = new ArrayList<>();
+            pop.addAll(elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
+            pop.addAll(population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
+            newElite.addAll(tc.doFilter(pop,i, (EvaluatorMapReduce) evaluator));
+        }
+
+        elitePopulation = newElite;
     }
 
     @Override
@@ -127,7 +144,6 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
     @Override
     protected void updateProgress() {
         super.updateProgress();
-
         // Aqui, para el NSGA-II adaptativo, actualizar los porcentajes de probabilidad para la ejecución de cada método
         double total = 0;
         for (int i = 0; i < contributions.size(); i++) {
@@ -277,5 +293,11 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
     public SolutionListEvaluator<S> getEvaluator(){
         return super.evaluator;
+    }
+
+
+    @Override
+    public List<S> getResult() {
+        return elitePopulation;
     }
 }

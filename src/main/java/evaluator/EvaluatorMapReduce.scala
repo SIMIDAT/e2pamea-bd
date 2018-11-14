@@ -184,10 +184,13 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         for (j <- 0 until ind.getNumberOfObjectives) {
           ind.setObjective(j, Double.NegativeInfinity)
         }
+        val div = new WRAccNorm()
+        div.setValue(Double.NegativeInfinity)
+        diversity.setAttribute(ind, div)
       }
     }
 
-    println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
+   // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
     // Once we've got the coverage of the rules, we can calculate the contingecy tables.
     return solutionList

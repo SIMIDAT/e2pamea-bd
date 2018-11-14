@@ -47,7 +47,7 @@ object Main {
     objectives.add(new WRAccNorm)
     objectives.add(new SuppDiff)
     evaluador.setObjectives(objectives)
-    evaluador.setBigDataProcessing(true)
+    evaluador.setBigDataProcessing(false)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
