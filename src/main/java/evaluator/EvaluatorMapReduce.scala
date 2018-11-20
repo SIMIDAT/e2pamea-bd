@@ -12,6 +12,7 @@ import org.apache.spark.util.SizeEstimator
 import org.json4s.jsonwritable
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
+import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
 import qualitymeasures.{ContingencyTable, WRAccNorm}
 import utils.BitSet
 import weka.core.Instances
@@ -154,8 +155,9 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       val ind = solutionList.get(i)
       val cove = new Coverage[BinarySolution]()
       val diversity = new DiversityMeasure[BinarySolution]()
-      cove.setAttribute(ind, coverages(i))
+
       if (!isEmpty(ind)) {
+        cove.setAttribute(ind, coverages(i))
         val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
 
         // tp = covered AND belong to the class
@@ -185,7 +187,10 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           ind.setObjective(j, Double.NegativeInfinity)
         }
         val div = new WRAccNorm()
+        val rank = new DominanceRanking[BinarySolution]()
         div.setValue(Double.NegativeInfinity)
+        rank.setAttribute(ind, Integer.MAX_VALUE)
+        cove.setAttribute(ind, new BitSet(coverages(i).capacity))
         diversity.setAttribute(ind, div)
       }
     }
@@ -268,25 +273,30 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     for (i <- 0 until solutionList.size()) {
       // for each individual
       val ind = solutionList.get(i)
-      var first = true
-      for (j <- 0 until ind.getNumberOfVariables) {
-        // for each variable
-        if (participates(ind, j)) {
-          // Perform OR operations between active elements in the DNF rule.
-          var coverageForVariable = new BitSet(sets(0)(0).capacity)
-          for (k <- 0 until ind.getNumberOfBits(j)) {
-            if (ind.getVariableValue(j).get(k)) {
-              coverageForVariable = coverageForVariable | sets(j)(k)
+
+      if(!isEmpty(ind)) {
+        var first = true
+        for (j <- 0 until ind.getNumberOfVariables) {
+          // for each variable
+          if (participates(ind, j)) {
+            // Perform OR operations between active elements in the DNF rule.
+            var coverageForVariable = new BitSet(sets(0)(0).capacity)
+            for (k <- 0 until ind.getNumberOfBits(j)) {
+              if (ind.getVariableValue(j).get(k)) {
+                coverageForVariable = coverageForVariable | sets(j)(k)
+              }
+            }
+            // after that, perform the AND operation
+            if (first) {
+              coverages(i) = coverageForVariable
+              first = false
+            } else {
+              coverages(i) = coverages(i) & coverageForVariable
             }
           }
-          // after that, perform the AND operation
-          if (first) {
-            coverages(i) = coverageForVariable
-            first = false
-          } else {
-            coverages(i) = coverages(i) & coverageForVariable
-          }
         }
+      } else {
+        coverages(i) = new BitSet(sets(0)(0).capacity)
       }
     }
 

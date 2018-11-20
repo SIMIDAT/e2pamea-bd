@@ -4,16 +4,20 @@ import attributes.Clase;
 import evaluator.Evaluator;
 import evaluator.EvaluatorMapReduce;
 import filters.TokenCompetitionFilter;
+import operators.selection.RankingAndCrowdingSelection;
+import org.apache.arrow.flatbuf.Binary;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.operator.CrossoverOperator;
 import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.operator.Operator;
 import org.uma.jmetal.operator.SelectionOperator;
-import org.uma.jmetal.operator.impl.selection.RankingAndCrowdingSelection;
 import org.uma.jmetal.problem.Problem;
+import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
+import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
+import ranking.BestOrderSortRanking;
 import reinitialisation.NonEvolutionReinitialisation;
 import scala.math.Numeric;
 
@@ -80,6 +84,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
 
         // Evolutionary process MAIN LOOP:
+        int gen = 0;
         while (!isStoppingConditionReached()) {
             //matingPopulation = selection(population);
             offspringPopulation = reproduction(population);
@@ -99,7 +104,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             }
 
             // No tocar esto (se actualiza el número de evaluaciones y las probabilidades de aplicación de cada método)
-            updateProgress();
+            updateProgress(); gen++;
         }
 
         // At the end. Perform a token competition procedure and return
@@ -201,31 +206,40 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
                     // Select the parents
                     ArrayList<S> parents = new ArrayList<>();
                     for (int j = 0; j < numParents; j++) {
-                        parents.add(selectionOperator.execute(filterPop));
+                        S execute = selectionOperator.execute(filterPop);
+
+                        parents.add(execute);
                     }
 
                     // Apply the crossover operator.
                     List<S> result = (List<S>) operator.execute(parents);
                     for (S res : result) {
+                        for(int k = 0; k < res.getNumberOfObjectives(); k++){
+                            res.setObjective(k, Double.NEGATIVE_INFINITY);
+                        }
                         contributions.set(index, contributions.get(index) + 1);
                         count++;
                     }
                     offspringPopulation.addAll(result);
-
                 } else if (operators.get(index) instanceof MutationOperator) {
                     MutationOperator operator = (MutationOperator) operators.get(index);
 
                     S result = (S) operator.execute(selectionOperator.execute(filterPop));
+
+                    for(int k = 0; k < result.getNumberOfObjectives(); k++){
+                        result.setObjective(k, Double.NEGATIVE_INFINITY);
+                    }
                     offspringPopulation.add(result);
                     contributions.set(index, contributions.get(index) + 1);
                     count++;
+
                 } else {
-                    System.out.println("ESTO QUE ESSS???");
+                    throw new JMetalException("Esto que essss??");
                 }
             }
         }
 
-
+        // AQUI HAY ALGO RARO. ARREGLALO
         if (offspringPopulation.size() != getMaxPopulationSize()) {
             while (offspringPopulation.size() != getMaxPopulationSize())
                 offspringPopulation.remove(offspringPopulation.size() - 1);

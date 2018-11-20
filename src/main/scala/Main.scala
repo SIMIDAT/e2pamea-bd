@@ -35,7 +35,7 @@ object Main {
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     println("Reading data...")
-    problem.readDataset("iris.arff", 2, spark)
+    problem.readDataset("SUSY.arff", 2, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
     problem.rand.setSeed(1)
@@ -95,9 +95,16 @@ object Main {
     val population = algorithm.getResult
     val computingTime = algorithmRunner.getComputingTime
 
-    println("Total execution time: " + computingTime + "ms")
+    println("Total training time: " + computingTime + " ms.")
 
     //algorithm.getPopulation.forEach(println)
+
+
+    /**
+      * TEST PART
+      */
+
+    
 
   }
 

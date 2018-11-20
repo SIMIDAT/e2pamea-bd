@@ -75,6 +75,7 @@ public class NSGAIIModifiableBuilder<S extends Solution<?>> {
         NSGAIIModifiable<S> algorithm =  new NSGAIIModifiable<S>(problem, maxEvaluations, populationSize, crossoverOperator, mutationOperator, selectionOperator, comparator, evaluator);
         if(operators != null)
             algorithm.addOperators(operators);
+
         return algorithm;
     }
 }

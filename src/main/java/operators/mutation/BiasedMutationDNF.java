@@ -31,24 +31,25 @@ public class BiasedMutationDNF implements MutationOperator<BinarySolution> {
     }
 
     private BinarySolution doMutation(BinarySolution binarySolution) {
+        BinarySolution sol = (BinarySolution) binarySolution.copy();
 
         if(rand.nextDouble(0.0, 1.0) <= mutationProb) {
-            int var = rand.nextInt(0, binarySolution.getNumberOfVariables() - 1);
+            int var = rand.nextInt(0, sol.getNumberOfVariables() - 1);
 
             if (rand.nextDouble(0.0, 1.0) < 0.5) {
                 // remove variable
-                binarySolution.getVariableValue(var).clear();
+                sol.getVariableValue(var).clear();
             } else {
                 // random flip of variables
-                for (int i = 0; i < binarySolution.getNumberOfBits(var); i++) {
+                for (int i = 0; i < sol.getNumberOfBits(var); i++) {
                     if (rand.nextDouble(0.0,1.0) < 0.5) {
-                        binarySolution.getVariableValue(var).flip(i);
+                        sol.getVariableValue(var).flip(i);
                     }
                 }
             }
         }
 
-        return binarySolution;
+        return sol;
     }
 
 

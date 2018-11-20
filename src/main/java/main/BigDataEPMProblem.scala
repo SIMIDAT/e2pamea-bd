@@ -140,6 +140,8 @@ class BigDataEPMProblem extends BinaryProblem{
 
   def getInitialisationMethod(): Int = initialisationMethod
 
+  def getNumExamples: Int  = numExamples
+
   def setInitialisationMethod(method: Int) = initialisationMethod = method
 
   def setSparkSession(sp: SparkSession) = {
@@ -184,6 +186,43 @@ class BigDataEPMProblem extends BinaryProblem{
 
     // The next individual belongs to a different class (last attribute), this is for ensuring we have individuals for all classes.
     clas = (clas + 1) % attributes.last.numValues
+
+    return sol
+  }
+
+  def createSolution(sets: ArrayBuffer[(Int, Int)], pctVariables: Double): BinarySolution = {
+    val sol = new DefaultBinarySolution(this)
+    val maxVariablesToInitialise = Math.ceil(pctVariables * sets.length)
+    val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt + 1)
+
+    val initialised = new BitSet(sets.length)
+    var varInitialised = 0
+
+    while(varInitialised != varsToInit){
+      val value = rand.nextInt(0 , sets.length - 1)
+      if (!initialised.get(value)){
+        val set = new BinarySet(sol.getNumberOfBits(sets(value)._1))
+        set.set(sets(value)._2)
+
+        // check if the generated variable is empty and fix it if necessary
+        if(set.cardinality() == 0){
+          set.set(rand.nextInt(0, sol.getNumberOfBits(value)))
+        } else  if(set.cardinality() == sol.getNumberOfBits(value)){
+          set.clear(rand.nextInt(0, sol.getNumberOfBits(value)))
+        }
+
+        sol.setVariableValue(sets(value)._1,set)
+        varInitialised += 1
+        initialised.set(value)
+      }
+    }
+
+    // clear the non-initialised variables
+    for(i <- 0 until getNumberOfVariables){
+      if(!initialised.get(i)){
+        sol.getVariableValue(i).clear()
+      }
+    }
 
     return sol
   }

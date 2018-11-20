@@ -263,4 +263,18 @@ class BitSet(numBits: Int) extends Serializable {
 
   /** Return the number of longs it would take to hold numBits. */
   private def bit2words(numBits: Int) = ((numBits - 1) >> 6) + 1
+
+
+  def toBitString(): String = {
+  var result = ""
+
+    for(i <- 0 until this.capacity){
+      if(get(i)){
+        result += "1"
+      } else {
+        result += "0"
+      }
+    }
+    result
+  }
 }
