@@ -26,8 +26,8 @@ import picocli.CommandLine.{Command, Option, Parameters}
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
 import utils.{ParametersParser, ResultWriter}
 
-@Command(name = "java -jar <jarfile>", version = Array("v1.0"),
-  description = Array("@|bold Fast Big Data MOEA|@"))
+@Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
+  description = Array("@|bold \nFast Big Data MOEA\n|@"))
 class Main extends Runnable{
 
   @Parameters(index = "0", paramLabel = "trainingFile", description = Array("The training file in ARFF format."))
@@ -70,6 +70,8 @@ class Main extends Runnable{
   @Option(names = Array("--list"), help=true, description = Array("List the quality measures available to be used as objectives."))
   var showMeasures = false
 
+  @Option(names = Array("-l", "--labels"), paramLabel = "NUMBER", description = Array("The number of fuzzy linguistic labels for each variable."))
+  var numLabels = 3
 
   override def run(): Unit = {
     if(help){
@@ -108,6 +110,7 @@ class Main extends Runnable{
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     println("Reading data...")
+    problem.setNumLabels(numLabels)
     problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
