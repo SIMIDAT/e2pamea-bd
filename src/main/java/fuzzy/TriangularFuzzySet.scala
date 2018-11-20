@@ -22,6 +22,6 @@ class TriangularFuzzySet(val value: ArrayBuffer[Double], val y2: Double) extends
     getY
   }
 
-  override def toString: String = "Triangular( " + sixDecimals.format(getValue(0)) + ", " + sixDecimals.format(getValue(1)) + ", " +
+  override def toString: String = "Triangular(" + sixDecimals.format(getValue(0)) + ", " + sixDecimals.format(getValue(1)) + ", " +
                   sixDecimals.format(getValue(2)) + ")"
 }
