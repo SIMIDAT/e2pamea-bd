@@ -2,7 +2,8 @@ package evaluator
 
 import java.util
 
-import attributes.{Clase, Coverage, DiversityMeasure}
+import attributes.{Clase, Coverage, DiversityMeasure, TestMeasures}
+import exceptions.InvalidRangeInMeasureException
 import fuzzy.Fuzzy
 import main.BigDataEPMProblem
 import org.apache.spark.SparkContext
@@ -13,7 +14,7 @@ import org.json4s.jsonwritable
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
 import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
-import qualitymeasures.{ContingencyTable, WRAccNorm}
+import qualitymeasures.{ContingencyTable, QualityMeasure, WRAccNorm}
 import utils.BitSet
 import weka.core.Instances
 
@@ -196,6 +197,82 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     }
 
    // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
+
+    // Once we've got the coverage of the rules, we can calculate the contingecy tables.
+    return solutionList
+  }
+
+
+  /**
+    * It evaluates against the test data.
+    * @param solutionList
+    * @param problem
+    * @return
+    */
+   def evaluateTest(solutionList: util.List[BinarySolution], problem: Problem[BinarySolution]): util.List[BinarySolution] = {
+    // In the map phase, it is returned an array of bitsets for each variable of the problem for all the individuals
+    val t_ini = System.currentTimeMillis()
+
+    val coverages = if (bigDataProcessing) {
+      calculateCoveragesBigData(solutionList, problem)
+    } else {
+      calculateCoveragesNonBigData(solutionList, problem)
+    }
+
+    // Calculate the contingency table for each individual
+    for (i <- coverages.indices) {
+      val ind = solutionList.get(i)
+      val cove = new Coverage[BinarySolution]()
+      val diversity = new DiversityMeasure[BinarySolution]()
+
+      if (!isEmpty(ind)) {
+        cove.setAttribute(ind, coverages(i))
+        val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
+
+        // tp = covered AND belong to the class
+        val tp = coverages(i) & classes(clase)
+
+        // tn = NOT covered AND DO NOT belong to the class
+        val tn = (~coverages(i)) & (~classes(clase))
+
+        // fp = covered AND DO NOT belong to the class
+        val fp = coverages(i) & (~classes(clase))
+
+        // fn = NOT covered AND belong to the class
+        val fn = (~coverages(i)) & classes(clase)
+
+        val table = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
+
+        val measures = utils.ClassLoader.getClasses
+        measures.forEach((q: QualityMeasure) => {
+          try {
+            q.calculateValue(table)
+            q.validate()
+          } catch {
+            case ex: InvalidRangeInMeasureException =>
+              System.err.println("Error while evaluating Individuals: ")
+              ex.showAndExit(this)
+          }
+        })
+
+        val test = new TestMeasures[BinarySolution]()
+        test.setAttribute(ind, measures)
+
+      } else {
+        // If the rule is empty, set the fitness at minimum possible value for all the objectives.
+        for (j <- 0 until ind.getNumberOfObjectives) {
+          ind.setObjective(j, Double.NegativeInfinity)
+        }
+        val div = new WRAccNorm()
+        val rank = new DominanceRanking[BinarySolution]()
+        div.setValue(Double.NegativeInfinity)
+        rank.setAttribute(ind, Integer.MAX_VALUE)
+        cove.setAttribute(ind, new BitSet(coverages(i).capacity))
+        diversity.setAttribute(ind, div)
+      }
+    }
+
+    // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
     // Once we've got the coverage of the rules, we can calculate the contingecy tables.
     return solutionList

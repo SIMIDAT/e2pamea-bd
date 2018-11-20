@@ -1,10 +1,14 @@
 package fuzzy
 
+import java.text.DecimalFormat
+
 import scala.collection.mutable.ArrayBuffer
 
 
 abstract class Fuzzy(val values: ArrayBuffer[Double],
                      var y: Double) extends Serializable {
+
+  protected val sixDecimals: DecimalFormat = new DecimalFormat("0.000000")
 
   def getY: Double = y
 

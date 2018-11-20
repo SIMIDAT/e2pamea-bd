@@ -1,4 +1,5 @@
 import java.util
+import java.util.concurrent.Callable
 
 import evaluator.{EvaluatorIndDNF, EvaluatorMapReduce}
 import main._
@@ -20,12 +21,84 @@ import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import org.apache.spark.sql.functions.{max, min}
 import org.uma.jmetal.util.pseudorandom.JMetalRandom
+import picocli.CommandLine
+import picocli.CommandLine.{Command, Option, Parameters}
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
+import utils.{ParametersParser, ResultWriter}
+
+@Command(name = "java -jar <jarfile>", version = Array("v1.0"),
+  description = Array("@|bold Fast Big Data MOEA|@"))
+class Main extends Runnable{
+
+  @Parameters(index = "0", paramLabel = "trainingFile", description = Array("The training file in ARFF format."))
+  var trainingFile: String = null
+
+  @Parameters(index = "1", paramLabel = "testFile", description = Array("The test file in ARFF format."))
+  var testFile: String = null
+
+  @Option(names = Array("-h", "--help"),  usageHelp = true, description = Array("Show this help message and exit."))
+  var help = false
+
+  @Option(names = Array("-V", "--version"),  versionHelp = true, description = Array("Print version information and exit."))
+  var version = false
+
+  @Option(names = Array("-s", "--seed"), paramLabel = "SEED", description = Array("The seed for the random number generator."))
+  var seed : Int = 1
+
+  @Option(names = Array("-p", "--partitions"), paramLabel = "NUMBER", description = Array("The number of partitions used within the MapReduce procedure"))
+  var numPartitions = 4
+
+  @Option(names = Array("-i", "--individuals"), paramLabel = "NUMBER", description = Array("The number of individuals in the population"))
+  var popSize = 100
+
+  @Option(names = Array("-e", "--evaluations"), paramLabel = "NUMBER", description = Array("The maximum number of evaluations until the end of the evolutionary process."))
+  var maxEvals = 25000
+
+  @Option(names = Array("-t", "--training"), paramLabel = "PATH", description = Array("The path for storing the training results file."))
+  var resultTraining: String = null
+
+  @Option(names = Array("-T", "--test"), paramLabel = "PATH", description = Array("The path for storing the test results file."))
+  var resultTest: String = null
+
+  @Option(names = Array("-r", "--rules"), paramLabel = "PATH", description = Array("The path for storing the rules file."))
+  var resultRules: String = null
+
+  @Option(names = Array("-o", "--objectives"), split = ",", paramLabel = "OBJ",
+    description = Array("A comma-separated list of names for the quality measures to be used as optimisation objectives." ))
+  var objectives : Array[String] = null
+
+  @Option(names = Array("--list"), help=true, description = Array("List the quality measures available to be used as objectives."))
+  var showMeasures = false
 
 
-object Main {
+  override def run(): Unit = {
+    if(help){
+      new CommandLine(this).usage(System.err)
+      return
+    } else if(version){
+      new CommandLine(this).printVersionHelp(System.err)
+      return
+    } else if(showMeasures){
+      for( s <- utils.ClassLoader.getAvailableClasses)
+      System.err.println(s)
+      return
+    }
 
-  def main(args: Array[String]): Unit = {
+    if(resultTraining == null) resultTraining = trainingFile + "_tra.txt"
+    if(resultTest == null) resultTest = trainingFile + "_tst.txt"
+    if(resultRules == null) resultRules = trainingFile + "_rules.txt"
+    val objs =  if(objectives != null){
+      val arr = new util.ArrayList[QualityMeasure]()
+      for(s <- objectives){
+       arr.add( Class.forName(classOf[QualityMeasure].getPackage.getName + "." + s).newInstance().asInstanceOf[QualityMeasure])
+      }
+      arr
+    } else {
+      val arr = new util.ArrayList[QualityMeasure]()
+      arr.add(new WRAccNorm)
+      arr.add(new SuppDiff)
+      arr
+    }
 
     // Se define el entorno de Spark
     val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
@@ -35,18 +108,16 @@ object Main {
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     println("Reading data...")
-    problem.readDataset("SUSY.arff", 2, spark)
+    problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
-    problem.rand.setSeed(1)
+
+    problem.rand.setSeed(seed)
 
 
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
-    val objectives = new util.ArrayList[QualityMeasure]()
-    objectives.add(new WRAccNorm)
-    objectives.add(new SuppDiff)
-    evaluador.setObjectives(objectives)
+    evaluador.setObjectives(objs)
     evaluador.setBigDataProcessing(false)
 
 
@@ -78,8 +149,8 @@ object Main {
       .setCrossoverOperator(crossover.asInstanceOf[CrossoverOperator[BinarySolution]])
       .setMutationOperator(mutation)
       .setSelectionOperator(selection)
-      .setMaxEvaluations(25000)
-      .setPopulationSize(100)
+      .setMaxEvaluations(maxEvals)
+      .setPopulationSize(popSize)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
       .addOperator(new HUXCrossover(1, () => problem.rand.nextDouble()))
@@ -95,7 +166,7 @@ object Main {
     val population = algorithm.getResult
     val computingTime = algorithmRunner.getComputingTime
 
-    println("Total training time: " + computingTime + " ms.")
+    println("Total training time: " + computingTime + " ms.\n.\n.\n.")
 
     //algorithm.getPopulation.forEach(println)
 
@@ -103,12 +174,24 @@ object Main {
     /**
       * TEST PART
       */
+    println("Initialising test. Reading data...")
+    problem.readDataset(testFile, numPartitions, spark)
+    evaluador.initialise(problem)
+    evaluador.evaluateTest(population, problem)
 
-    
-
+    val writer = new ResultWriter(resultTraining,resultTest,"",resultRules, population, problem, objs, true)
+    writer.writeRules()
+    writer.writeTrainingMeasures()
+    writer.writeTestFullResults()
   }
+}
+
+object Main{
 
 
+  def main(args: Array[String]): Unit = {
+    CommandLine.run(new Main(), System.err, args: _*)
+  }
 
 
 }

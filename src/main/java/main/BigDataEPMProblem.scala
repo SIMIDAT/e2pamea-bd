@@ -4,7 +4,7 @@ import java.util
 import java.util.ArrayList
 
 import attributes.Clase
-import fuzzy.{Fuzzy, TriangularFuzzySet}
+import fuzzy.{DecreasingLineFuzzySet, Fuzzy, IncreasingLineFuzzySet, TriangularFuzzySet}
 import org.apache.spark.sql.functions.{max, min}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
@@ -325,7 +325,7 @@ class BigDataEPMProblem extends BinaryProblem{
       var value = min + marca * (label - 1)
       // Creation of x0 point
       if (label == 0)
-        definitions += -1 * Double.MaxValue
+        definitions += min
       else
         definitions += Round(value, max)
       // Creation of x1 point
@@ -334,11 +334,20 @@ class BigDataEPMProblem extends BinaryProblem{
       // Creation of x2 point
       value = min + marca * (label + 1)
       if (label == numLabels - 1)
-        definitions += Double.MaxValue
+        definitions += max
       else
         definitions += Round(value, max)
       // Create de triangular fuzzy set
-      val set = new TriangularFuzzySet(definitions, 1.0)
+      val set = if(label == 0){
+        definitions.remove(0)
+        new DecreasingLineFuzzySet(definitions, 1.0)
+      } else if(label == numLabels - 1){
+        definitions.remove(definitions.size -1)
+        new IncreasingLineFuzzySet(definitions, 1.0)
+      } else {
+        new TriangularFuzzySet(definitions, 1.0)
+      }
+
       sets += set
       cutPoint += marca
       }
