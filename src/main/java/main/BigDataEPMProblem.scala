@@ -1,13 +1,10 @@
 package main
 
-import java.util
-import java.util.ArrayList
-
 import attributes.Clase
 import fuzzy.{DecreasingLineFuzzySet, Fuzzy, IncreasingLineFuzzySet, TriangularFuzzySet}
 import org.apache.spark.sql.functions.{max, min}
-import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.util.collection.BitSet
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
@@ -16,7 +13,6 @@ import org.uma.jmetal.util.binarySet.BinarySet
 import org.uma.jmetal.util.pseudorandom.JMetalRandom
 import org.uma.jmetal.util.solutionattribute.impl.{NumberOfViolatedConstraints, OverallConstraintViolation}
 import utils.Attribute
-import weka.core.Instances
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -243,9 +239,12 @@ class BigDataEPMProblem extends BinaryProblem{
     val listValues = spark.sparkContext.textFile(path)
       .filter(x => x.startsWith("@"))
       .filter(x => !x.toLowerCase.startsWith("@relation"))
-      .filter(x => !x.toLowerCase.startsWith("@data")).map(x => {
+      .filter(x => !x.toLowerCase.startsWith("@data"))
+      .filter(x => !x.toLowerCase.startsWith("@inputs"))
+      .filter(x => !x.toLowerCase.startsWith("@outputs"))
+      .map(x => {
       val values = x.split("\\s+")
-      if (values(2).equalsIgnoreCase("numeric") | values(2).equalsIgnoreCase("real")) {
+      if (values(2).equalsIgnoreCase("numeric") | values(2).equalsIgnoreCase("real") | values(2).equalsIgnoreCase("integer")) {
         StructField(values(1), DoubleType, true)
       } else {
         StructField(values(1), StringType, true)

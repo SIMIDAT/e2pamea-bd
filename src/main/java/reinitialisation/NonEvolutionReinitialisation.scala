@@ -6,13 +6,12 @@ import java.util.stream.Collectors
 import attributes.{Clase, Coverage}
 import evaluator.EvaluatorMapReduce
 import filters.TokenCompetitionFilter
-import javax.management.JMException
 import main.{BigDataEPMProblem, NSGAIIModifiable}
-import utils.BitSet
 import org.uma.jmetal.problem.Problem
-import org.uma.jmetal.solution.{BinarySolution, Solution}
+import org.uma.jmetal.solution.Solution
 import org.uma.jmetal.util.JMetalException
 import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
+import utils.BitSet
 
 import scala.collection.mutable.ArrayBuffer
 

@@ -1,7 +1,5 @@
 package fuzzy
 
-import java.util
-
 import scala.collection.mutable.ArrayBuffer
 
 

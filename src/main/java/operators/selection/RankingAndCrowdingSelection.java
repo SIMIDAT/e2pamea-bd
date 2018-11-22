@@ -1,11 +1,8 @@
 package operators.selection;
 
-import evaluator.EvaluatorMapReduce;
 import org.uma.jmetal.operator.SelectionOperator;
-import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
-import org.uma.jmetal.util.binarySet.BinarySet;
 import org.uma.jmetal.util.comparator.CrowdingDistanceComparator;
 import org.uma.jmetal.util.comparator.DominanceComparator;
 import org.uma.jmetal.util.solutionattribute.Ranking;

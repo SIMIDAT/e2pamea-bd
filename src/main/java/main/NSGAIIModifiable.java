@@ -5,23 +5,21 @@ import evaluator.Evaluator;
 import evaluator.EvaluatorMapReduce;
 import filters.TokenCompetitionFilter;
 import operators.selection.RankingAndCrowdingSelection;
-import org.apache.arrow.flatbuf.Binary;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.operator.CrossoverOperator;
 import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.operator.Operator;
 import org.uma.jmetal.operator.SelectionOperator;
 import org.uma.jmetal.problem.Problem;
-import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
-import ranking.BestOrderSortRanking;
 import reinitialisation.NonEvolutionReinitialisation;
-import scala.math.Numeric;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**

@@ -1,30 +1,21 @@
 import java.util
-import java.util.concurrent.Callable
 
-import evaluator.{EvaluatorIndDNF, EvaluatorMapReduce}
+import evaluator.EvaluatorMapReduce
 import main._
 import operators.crossover.NPointCrossover
 import operators.mutation.BiasedMutationDNF
-import org.apache.avro.generic.GenericData
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
-import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
+import org.apache.spark.sql.SparkSession
 import org.uma.jmetal.operator.CrossoverOperator
-import org.uma.jmetal.operator.impl.crossover.{HUXCrossover, SBXCrossover, TwoPointCrossover}
-import org.uma.jmetal.operator.impl.mutation.{BitFlipMutation, PolynomialMutation}
+import org.uma.jmetal.operator.impl.crossover.HUXCrossover
 import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
 import org.uma.jmetal.problem.BinaryProblem
-import org.uma.jmetal.solution.{BinarySolution, DoubleSolution}
+import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDistanceComparator}
-import org.uma.jmetal.util.evaluator.impl.SequentialSolutionListEvaluator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
-import org.apache.spark.sql.functions.{max, min}
-import org.uma.jmetal.util.pseudorandom.JMetalRandom
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
-import utils.{ParametersParser, ResultWriter}
+import utils.{Attribute, ResultWriter}
 
 @Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
   description = Array("@|bold \nFast Big Data MOEA\n|@"))
@@ -103,12 +94,14 @@ class Main extends Runnable{
     }
 
     // Se define el entorno de Spark
-    val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
+    //val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
+    val spark = SparkSession.builder.appName("Nuevo-MOEA").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
+    val t_ini = System.currentTimeMillis()
     println("Reading data...")
     problem.setNumLabels(numLabels)
     problem.readDataset(trainingFile, numPartitions, spark)
@@ -116,6 +109,12 @@ class Main extends Runnable{
     problem.generateFuzzySets()
 
     problem.rand.setSeed(seed)
+    var features: Int = 0
+    val attrs: Array[Attribute] = problem.getAttributes
+    for (i <- 0 until attrs.length){
+      features += attrs(i).numValues
+    }
+    println("Number of features: " + features)
 
 
     // Se elige el evaluador
@@ -179,13 +178,17 @@ class Main extends Runnable{
       */
     println("Initialising test. Reading data...")
     problem.readDataset(testFile, numPartitions, spark)
+    val t_ini_test = System.currentTimeMillis()
     evaluador.initialise(problem)
     evaluador.evaluateTest(population, problem)
+    println("Total test time: " + (System.currentTimeMillis() - t_ini_test) + " ms.")
 
     val writer = new ResultWriter(resultTraining,resultTest,"",resultRules, population, problem, objs, true)
     writer.writeRules()
     writer.writeTrainingMeasures()
     writer.writeTestFullResults()
+
+    println("Total execution time: " + (System.currentTimeMillis() - t_ini) + " ms.")
   }
 }
 

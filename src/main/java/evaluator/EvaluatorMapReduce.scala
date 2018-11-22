@@ -4,19 +4,14 @@ import java.util
 
 import attributes.{Clase, Coverage, DiversityMeasure, TestMeasures}
 import exceptions.InvalidRangeInMeasureException
-import fuzzy.Fuzzy
 import main.BigDataEPMProblem
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
 import org.apache.spark.util.SizeEstimator
-import org.json4s.jsonwritable
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
 import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
-import qualitymeasures.{ContingencyTable, QualityMeasure, WRAccNorm}
+import qualitymeasures.{ContingencyTable, WRAccNorm}
 import utils.BitSet
-import weka.core.Instances
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -244,7 +239,17 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         val table = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
 
         val measures = utils.ClassLoader.getClasses
-        measures.forEach((q: QualityMeasure) => {
+        for(q <- 0 until measures.size()){
+          try{
+          measures.get(q).calculateValue(table)
+          measures.get(q).validate()
+          } catch {
+            case ex: InvalidRangeInMeasureException =>
+              System.err.println("Error while evaluating Individuals: ")
+              ex.showAndExit(this)
+          }
+        }
+        /*measures.forEach((q: QualityMeasure) => {
           try {
             q.calculateValue(table)
             q.validate()
@@ -253,7 +258,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
               System.err.println("Error while evaluating Individuals: ")
               ex.showAndExit(this)
           }
-        })
+        })*/
 
         val test = new TestMeasures[BinarySolution]()
         test.setAttribute(ind, measures)

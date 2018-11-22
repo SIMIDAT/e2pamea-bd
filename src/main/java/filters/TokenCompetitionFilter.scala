@@ -1,8 +1,6 @@
 package filters
 
 import java.util
-import java.util.Comparator
-import java.util.stream.Collectors
 
 import attributes.{Clase, Coverage, DiversityMeasure}
 import evaluator.EvaluatorMapReduce

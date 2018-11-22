@@ -1,6 +1,5 @@
 package ranking;
 
-import org.apache.parquet.it.unimi.dsi.fastutil.doubles.DoubleComparator;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.comparator.DominanceComparator;

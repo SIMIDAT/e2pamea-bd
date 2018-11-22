@@ -1,17 +1,13 @@
 package evaluator;
 
 import exceptions.InvalidRangeInMeasureException;
-import fuzzy.Fuzzy;
 import org.uma.jmetal.problem.Problem;
-import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
-import weka.core.Instances;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * An evaluator of individuals to be used in an evolutionary algorithm

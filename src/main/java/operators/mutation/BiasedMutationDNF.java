@@ -4,8 +4,6 @@ import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
-import java.util.Random;
-
 public class BiasedMutationDNF implements MutationOperator<BinarySolution> {
 
     /**
