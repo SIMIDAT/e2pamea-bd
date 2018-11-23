@@ -2,8 +2,9 @@ package main
 
 import attributes.Clase
 import fuzzy.{DecreasingLineFuzzySet, Fuzzy, IncreasingLineFuzzySet, TriangularFuzzySet}
-import org.apache.spark.sql.functions.{max, min}
-import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
+import org.apache.spark.sql.expressions._
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.util.collection.BitSet
 import org.uma.jmetal.problem.BinaryProblem
@@ -254,6 +255,7 @@ class BigDataEPMProblem extends BinaryProblem{
     val schema = StructType(listValues)
 
     dataset = spark.read.option("header", "false").option("comment", "@").schema(schema).csv(path)
+    dataset = zipWithIndex(dataset,0)
     dataset.cache()
     numExamples = dataset.count().toInt
   }
@@ -269,7 +271,7 @@ class BigDataEPMProblem extends BinaryProblem{
   def getAttributes(spark: SparkSession): Unit = {
     import spark.implicits._
 
-    attributes = dataset.columns.map(x => {
+    attributes = dataset.columns.drop(1).map(x => {
       val nominal = dataset.schema(x).dataType match {
         case StringType => true
         case DoubleType => false
@@ -419,7 +421,32 @@ class BigDataEPMProblem extends BinaryProblem{
   }
 
 
+  /**
+    * zipWithIndex: it adds a column in the data frame that corresponds the index of that element
+    * @param df
+    * @param offset
+    * @param indexName
+    * @return
+    */
+  def zipWithIndex(df: DataFrame, offset: Long = 1, indexName: String = "index") = {
+    val columnNames = Array(indexName) ++ df.columns
+    val dfWithPartitionId = df.withColumn("partition_id", spark_partition_id()).withColumn("inc_id", monotonically_increasing_id())
 
+    val partitionOffsets = dfWithPartitionId
+      .groupBy("partition_id")
+      .agg(count(lit(1)) as "cnt", first("inc_id") as "inc_id")
+      .orderBy("partition_id")
+      .select(sum("cnt").over(Window.orderBy("partition_id")) - col("cnt") - col("inc_id") + lit(offset) as "cnt" )
+      .collect()
+      .map(_.getLong(0))
+      .toArray
+
+    dfWithPartitionId
+      .withColumn("partition_offset", udf((partitionId: Int) => partitionOffsets(partitionId), LongType)(col("partition_id")))
+      .withColumn(indexName, col("partition_offset") + col("inc_id"))
+      .drop("partition_id", "partition_offset", "inc_id")
+      .select(columnNames.head, columnNames.tail: _*)
+  }
 
 
 }

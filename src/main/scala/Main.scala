@@ -4,6 +4,7 @@ import evaluator.EvaluatorMapReduce
 import main._
 import operators.crossover.NPointCrossover
 import operators.mutation.BiasedMutationDNF
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.uma.jmetal.operator.CrossoverOperator
 import org.uma.jmetal.operator.impl.crossover.HUXCrossover
@@ -32,6 +33,9 @@ class Main extends Runnable{
 
   @Option(names = Array("-V", "--version"),  versionHelp = true, description = Array("Print version information and exit."))
   var version = false
+
+  @Option(names = Array("-v"), description = Array("Show Spark INFO messages."))
+  var verbose = false
 
   @Option(names = Array("-s", "--seed"), paramLabel = "SEED", description = Array("The seed for the random number generator."))
   var seed : Int = 1
@@ -95,8 +99,15 @@ class Main extends Runnable{
 
     // Se define el entorno de Spark
     //val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
-    val spark = SparkSession.builder.appName("Nuevo-MOEA").getOrCreate()
-    spark.sparkContext.setLogLevel("ERROR")
+    val conf = getConfig
+    val spark = SparkSession.builder.config(conf).config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      // use this if you need to increment Kryo buffer size. Default 64k
+      .config("spark.kryoserializer.buffer", "1024k")
+      // use this if you need to increment Kryo buffer max size. Default 64m
+      .config("spark.kryoserializer.buffer.max", "1024m").appName("Nuevo-MOEA").getOrCreate()
+
+
+    if(!verbose) spark.sparkContext.setLogLevel("ERROR")
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
@@ -190,6 +201,42 @@ class Main extends Runnable{
 
     println("Total execution time: " + (System.currentTimeMillis() - t_ini) + " ms.")
   }
+
+  private def getConfig = {
+    val conf = new SparkConf()
+    conf.registerKryoClasses(
+      Array(
+        classOf[scala.collection.mutable.WrappedArray.ofRef[_]],
+        classOf[org.apache.spark.sql.types.StructType],
+        classOf[Array[org.apache.spark.sql.types.StructType]],
+        classOf[org.apache.spark.sql.types.StructField],
+        classOf[Array[org.apache.spark.sql.types.StructField]],
+        Class.forName("org.apache.spark.sql.types.StringType$"),
+        Class.forName("org.apache.spark.sql.types.LongType$"),
+        Class.forName("org.apache.spark.sql.types.BooleanType$"),
+        Class.forName("org.apache.spark.sql.types.DoubleType$"),
+        classOf[org.apache.spark.sql.types.Metadata],
+        classOf[org.apache.spark.sql.types.ArrayType],
+        Class.forName("org.apache.spark.sql.execution.joins.UnsafeHashedRelation"),
+        classOf[org.apache.spark.sql.catalyst.InternalRow],
+        classOf[Array[org.apache.spark.sql.catalyst.InternalRow]],
+        classOf[org.apache.spark.sql.catalyst.expressions.UnsafeRow],
+        Class.forName("org.apache.spark.sql.execution.joins.LongHashedRelation"),
+        Class.forName("org.apache.spark.sql.execution.joins.LongToUnsafeRowMap"),
+        classOf[utils.BitSet],
+        classOf[org.apache.spark.sql.types.DataType],
+        classOf[Array[org.apache.spark.sql.types.DataType]],
+        Class.forName("org.apache.spark.sql.types.NullType$"),
+        Class.forName("org.apache.spark.sql.types.IntegerType$"),
+        Class.forName("org.apache.spark.sql.types.TimestampType$"),
+        Class.forName("org.apache.spark.internal.io.FileCommitProtocol$TaskCommitMessage"),
+        Class.forName("scala.collection.immutable.Set$EmptySet$"),
+        Class.forName("java.lang.Class")
+      )
+    )
+  }
+
+
 }
 
 object Main{

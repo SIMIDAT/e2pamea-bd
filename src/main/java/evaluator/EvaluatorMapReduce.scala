@@ -57,7 +57,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       val problema = problem.asInstanceOf[BigDataEPMProblem]
       val attrs = problema.getAttributes
-      val length = problema.getDataset.count()
+      val length = problema.getNumExamples
       classes = new ArrayBuffer[BitSet]()
 
       val t_ini = System.currentTimeMillis()
@@ -65,7 +65,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         classes += new BitSet(length.toInt)
       }
       // Calculate the bitsets for the variables
-      sets = problema.getDataset.rdd.zipWithIndex().mapPartitions(x => {
+      sets = problema.getDataset.rdd.mapPartitions(x => {
 
         // Instatiate the whole bitsets structure for each partition with length equal to the length of data
         val partialSet = new ArrayBuffer[ArrayBuffer[BitSet]]()
@@ -77,22 +77,22 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         }
 
         x.foreach(y => {
-          val row = y._1
-          val index = y._2.toInt
-          for (i <- attrs.indices.dropRight(1)) {
+          val index = y.getLong(0).toInt
+          for (i <- attrs.indices.dropRight(1) ) {
+            val ind = i+1
             // For each attribute
             for (j <- 0 until attrs(i).numValues) {
               // for each label/value
               if (attrs(i).isNumeric) {
                 // Numeric variable, fuzzy computation
-                if (problema.calculateBelongingDegree(i, j, row.getDouble(i)) >= getMaxBelongingDegree(problema, i, row.getDouble(i))) {
+                if (problema.calculateBelongingDegree(i, j, y.getDouble(ind)) >= getMaxBelongingDegree(problema, i, y.getDouble(ind))) {
                   partialSet(i)(j).set(index)
                 } else {
                   partialSet(i)(j).unset(index)
                 }
               } else {
                 // Discrete variable
-                if (attrs(i).valueName(j).equals(row.getString(i))) {
+                if (attrs(i).valueName(j).equals(y.getString(ind))) {
                   partialSet(i)(j).set(index)
                 } else {
                   partialSet(i)(j).unset(index)
@@ -131,7 +131,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(sets) / Math.pow(1000, 2)) + " MB.")
 
       }
-
+      problema.getDataset.unpersist()
 
     }
   }
