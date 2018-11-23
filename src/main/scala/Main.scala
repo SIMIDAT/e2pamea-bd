@@ -204,7 +204,7 @@ class Main extends Runnable{
     writer.writeTestFullResults()
 
     println("************************\nTIME SUMMARY\n************************")
-    println("Reading and processing data time: " + t_fin_read + " ms.")
+    println("Reading and processing data time: " + (System.currentTimeMillis() - t_fin_read) + " ms.")
     println("Training time: " + computingTime + " ms.")
     println("Test time: " + test_time + " ms.")
     println("Total execution time: " + (System.currentTimeMillis() - t_ini) + " ms.")
