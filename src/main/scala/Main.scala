@@ -120,6 +120,7 @@ class Main extends Runnable{
     problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
+    val t_fin_read = System.currentTimeMillis()
 
     problem.rand.setSeed(seed)
     var features: Int = 0
@@ -194,13 +195,18 @@ class Main extends Runnable{
     val t_ini_test = System.currentTimeMillis()
     evaluador.initialise(problem)
     evaluador.evaluateTest(population, problem)
-    println("Total test time: " + (System.currentTimeMillis() - t_ini_test) + " ms.")
+    val test_time = (System.currentTimeMillis() - t_ini_test)
+    println("Total test time: " + test_time + " ms.")
 
     val writer = new ResultWriter(resultTraining,resultTest,"",resultRules, population, problem, objs, true)
     writer.writeRules()
     writer.writeTrainingMeasures()
     writer.writeTestFullResults()
 
+    println("************************\nTIME SUMMARY\n************************")
+    println("Reading and processing data time: " + t_fin_read + " ms.")
+    println("Training time: " + computingTime + " ms.")
+    println("Test time: " + test_time + " ms.")
     println("Total execution time: " + (System.currentTimeMillis() - t_ini) + " ms.")
   }
 
