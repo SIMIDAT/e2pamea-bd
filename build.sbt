@@ -13,8 +13,8 @@ libraryDependencies ++= Seq(
   "org.uma.jmetal" % "jmetal-core" % jMetalVersion ,
   "org.uma.jmetal" % "jmetal-algorithm" % jMetalVersion,
   "info.picocli" % "picocli" % "3.8.0",
-  "org.apache.spark" %% "spark-core" % sparkVersion ,
-  "org.apache.spark" %% "spark-sql" % sparkVersion 
+  "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
  )
 
 assemblyMergeStrategy in assembly := {

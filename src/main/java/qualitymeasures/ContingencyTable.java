@@ -27,14 +27,12 @@ import exceptions.InvalidContingencyTableException;
 import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.util.solutionattribute.impl.GenericSolutionAttribute;
 
-import java.util.ArrayList;
-
 /**
  * Class to represent a contingency table.
  * 
  * @author Angel Miguel Garcia Vico <agvico at ujaen.es>
  */
-public class ContingencyTable extends GenericSolutionAttribute<BinarySolution, ArrayList<Integer>> {
+public class ContingencyTable extends GenericSolutionAttribute<BinarySolution, ContingencyTable> {
     
     /**
      * The true positives
