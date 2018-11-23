@@ -98,13 +98,15 @@ class Main extends Runnable{
     }
 
     // Se define el entorno de Spark
-    //val spark = SparkSession.builder.appName("Nuevo-MOEA").master("local[*]").config("spark.executor.memory", "3g").getOrCreate()
     val conf = getConfig
     val spark = SparkSession.builder.config(conf).config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       // use this if you need to increment Kryo buffer size. Default 64k
       .config("spark.kryoserializer.buffer", "1024k")
       // use this if you need to increment Kryo buffer max size. Default 64m
-      .config("spark.kryoserializer.buffer.max", "1024m").appName("Nuevo-MOEA").getOrCreate()
+      .config("spark.kryoserializer.buffer.max", "1024m")
+      .appName("Nuevo-MOEA")
+      //.master("local[*]")
+      .getOrCreate()
 
 
     if(!verbose) spark.sparkContext.setLogLevel("ERROR")

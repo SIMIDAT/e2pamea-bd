@@ -113,12 +113,33 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         x
       })
 
-      // Calculate the bitsets for the classes (Buscar forma de hacerlo distribuido, sin el collect() )
-      val columna = problema.getDataset.select(attrs.last.getName).collect()
+      // Calculate the bitsets for the classes
+      val numclasses = attrs.last.numValues
+      classes = problema.getDataset.select("index", attrs.last.getName).rdd.mapPartitions(x => {
+        val clase = new ArrayBuffer[BitSet]()
+        for(i <- 0 until numclasses){
+          clase += new BitSet(length)
+        }
+        x.foreach(y => {
+          val index = y.getLong(0).toInt
+          val name = y.getString(1)
+          clase(attrs.last.nominalValue.indexOf(name)).set(index)
+        })
+        val aux = new Array[ArrayBuffer[BitSet]](1)
+        aux(0) = clase
+        aux.iterator
+      }).reduce((x,y) => {
+        for(i <- x.indices){
+          x(i) = x(i) | y(i)
+        }
+        x
+      })
+
+      /*val columna = problema.getDataset.select(attrs.last.getName).collect()
       for (i <- columna.indices) {
         val name = columna(i).getString(0)
         classes(attrs.last.nominalValue.indexOf(name)).set(i)
-      }
+      }*/
 
       //println("total sample: " + length + "  class 0: " + classes(0).cardinality() + "  class 1: " + classes(1).cardinality())
       super.setProblem(problema)
