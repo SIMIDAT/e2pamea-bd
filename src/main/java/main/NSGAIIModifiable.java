@@ -14,7 +14,6 @@ import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
-import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 import reinitialisation.NonEvolutionReinitialisation;
 
 import java.util.ArrayList;
@@ -192,7 +191,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             int count = 0;
             while (count < filterPop.size()) {
                 // Apply the different operators according to its probability.
-                double prob = JMetalRandom.getInstance().nextDouble(0.0, 1.0);
+                double prob = ((BigDataEPMProblem) problem).rand().nextDouble(0.0, 1.0);
 
 
                 int index = getIndexOfOperator(prob);

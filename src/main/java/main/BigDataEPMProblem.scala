@@ -244,7 +244,7 @@ class BigDataEPMProblem extends BinaryProblem{
       .filter(x => !x.toLowerCase.startsWith("@inputs"))
       .filter(x => !x.toLowerCase.startsWith("@outputs"))
       .map(x => {
-      val values = x.split("\\s+")
+      val values = x.split("( *)(\\{)( *)|( *)(\\})( *)|( *)(\\[)( *)|( *)(\\])( *)|( *)(,)( *)| ")
       if (values(2).equalsIgnoreCase("numeric") | values(2).equalsIgnoreCase("real") | values(2).equalsIgnoreCase("integer")) {
         StructField(values(1), DoubleType, true)
       } else {

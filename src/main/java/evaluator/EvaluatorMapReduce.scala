@@ -10,7 +10,7 @@ import org.apache.spark.util.SizeEstimator
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
 import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
-import qualitymeasures.{ContingencyTable, QualityMeasure, WRAccNorm}
+import qualitymeasures.{ContingencyTable, WRAccNorm}
 import utils.BitSet
 
 import scala.collection.mutable.ArrayBuffer
@@ -260,7 +260,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         val table = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
 
         val measures = utils.ClassLoader.getClasses
-        /*for(q <- 0 until measures.size()){
+        for(q <- 0 until measures.size()){
           try{
           measures.get(q).calculateValue(table)
           measures.get(q).validate()
@@ -269,8 +269,8 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
               System.err.println("Error while evaluating Individuals: ")
               ex.showAndExit(this)
           }
-        }*/
-        measures.forEach((q: QualityMeasure) => {
+        }
+        /*measures.forEach((q: QualityMeasure) => {
           try {
             q.calculateValue(table)
             q.validate()
@@ -279,7 +279,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
               System.err.println("Error while evaluating Individuals: ")
               ex.showAndExit(this)
           }
-        })
+        })*/
 
         val test = new TestMeasures[BinarySolution]()
         test.setAttribute(ind, measures)

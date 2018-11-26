@@ -12,6 +12,7 @@ import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDistanceComparator}
+import org.uma.jmetal.util.pseudorandom.RandomGenerator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
@@ -105,7 +106,7 @@ class Main extends Runnable{
       // use this if you need to increment Kryo buffer max size. Default 64m
       .config("spark.kryoserializer.buffer.max", "1024m")
       .appName("Nuevo-MOEA")
-      //.master("local[*]")
+      .master("local[*]")
       .getOrCreate()
 
 
@@ -160,6 +161,9 @@ class Main extends Runnable{
       .setPopulationSize(100).setDominanceComparator(dominanceComparator)
       .setSolutionListEvaluator(evaluador)
       .build*/
+    val rdob :RandomGenerator[java.lang.Double] = new RandomGenerator[java.lang.Double] {
+      override def getRandomValue: java.lang.Double = problem.rand.nextDouble()
+    }
     val algorithm = new NSGAIIModifiableBuilder[BinarySolution]
       .setProblem(problem)
       .setCrossoverOperator(crossover.asInstanceOf[CrossoverOperator[BinarySolution]])
@@ -169,9 +173,8 @@ class Main extends Runnable{
       .setPopulationSize(popSize)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
-      .addOperator(new HUXCrossover(1, () => problem.rand.nextDouble()))
+      .addOperator(new HUXCrossover(1, rdob))
       .build()
-
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
 
     // Ahora, se ejecuta el algoritmo genetico previamente creado.
