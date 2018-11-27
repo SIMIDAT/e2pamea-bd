@@ -76,26 +76,34 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           }
         }
 
-        x.foreach(y => {
+        x.foreach(f = y => {
           val index = y.getLong(0).toInt
-          for (i <- attrs.indices.dropRight(1) ) {
-            val ind = i+1
+          for (i <- attrs.indices.dropRight(1)) {
+            val ind = i + 1
             // For each attribute
             for (j <- 0 until attrs(i).numValues) {
               // for each label/value
               if (attrs(i).isNumeric) {
                 // Numeric variable, fuzzy computation
-                if (problema.calculateBelongingDegree(i, j, y.getDouble(ind)) >= getMaxBelongingDegree(problema, i, y.getDouble(ind))) {
+                if (y.isNullAt(ind)) {
                   partialSet(i)(j).set(index)
                 } else {
-                  partialSet(i)(j).unset(index)
+                  if (problema.calculateBelongingDegree(i, j, y.getDouble(ind)) >= getMaxBelongingDegree(problema, i, y.getDouble(ind))) {
+                    partialSet(i)(j).set(index)
+                  } else {
+                    partialSet(i)(j).unset(index)
+                  }
                 }
               } else {
                 // Discrete variable
-                if (attrs(i).valueName(j).equals(y.getString(ind))) {
+                if (y.isNullAt(ind)) {
                   partialSet(i)(j).set(index)
                 } else {
-                  partialSet(i)(j).unset(index)
+                  if (attrs(i).valueName(j).equals(y.getString(ind))) {
+                    partialSet(i)(j).set(index)
+                  } else {
+                    partialSet(i)(j).unset(index)
+                  }
                 }
               }
             }

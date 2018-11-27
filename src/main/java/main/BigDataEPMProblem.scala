@@ -91,9 +91,28 @@ class BigDataEPMProblem extends BinaryProblem{
     */
   var spark: SparkSession = null
 
+  /**
+    * The number of examples in the dataset
+    */
   var numExamples: Int = 0
 
+  /**
+    * The number of partitions in the dataset
+    */
   private var numPartitions: Int = 0
+
+  /**
+    * The default comment char for the ARFF reading as CSV
+    */
+  private var commentChar = "@"
+
+  /**
+    * The null value string
+    */
+  private var nullValue = "?"
+
+
+  def setNullValue(value: String): Unit = {nullValue = value}
 
   /**
     * Get the corresponding fuzzy set j for the variable i
@@ -196,16 +215,16 @@ class BigDataEPMProblem extends BinaryProblem{
     var varInitialised = 0
 
     while(varInitialised != varsToInit){
-      val value = rand.nextInt(0 , sets.length - 1)
+      val value = rand.nextInt(0 , sets.length - 1) // la variable sets corresponde a los pares var,value que cubren al ejemplo.
       if (!initialised.get(value)){
         val set = new BinarySet(sol.getNumberOfBits(sets(value)._1))
         set.set(sets(value)._2)
 
         // check if the generated variable is empty and fix it if necessary
         if(set.cardinality() == 0){
-          set.set(rand.nextInt(0, sol.getNumberOfBits(value)))
-        } else  if(set.cardinality() == sol.getNumberOfBits(value)){
-          set.clear(rand.nextInt(0, sol.getNumberOfBits(value)))
+          set.set(rand.nextInt(0, sol.getNumberOfBits(sets(value)._1 ) - 1))
+        } else  if(set.cardinality() == sol.getNumberOfBits(sets(value)._1)){
+          set.clear(rand.nextInt(0, sol.getNumberOfBits(sets(value)._1) - 1))
         }
 
         sol.setVariableValue(sets(value)._1,set)
@@ -254,7 +273,12 @@ class BigDataEPMProblem extends BinaryProblem{
 
     val schema = StructType(listValues)
 
-    dataset = spark.read.option("header", "false").option("comment", "@").schema(schema).csv(path)
+    dataset = spark.read.option("header", "false")
+      .option("comment", "@")
+      .option("nullValue", nullValue)
+      .option("mode", "FAILFAST")   // This mode throws an error on any malformed line is encountered
+      .schema(schema).csv(path)
+
     dataset = zipWithIndex(dataset,0)
     dataset.cache()
     numExamples = dataset.count().toInt

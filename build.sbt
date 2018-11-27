@@ -1,4 +1,4 @@
-name := "pruebaJMetal"
+name := "VF-AdMOEA"
 
 version := "0.1"
 

@@ -69,6 +69,9 @@ class Main extends Runnable{
   @Option(names = Array("-l", "--labels"), paramLabel = "NUMBER", description = Array("The number of fuzzy linguistic labels for each variable."))
   var numLabels = 3
 
+  @Option(names = Array("-n", "--null"), paramLabel = "STRING", description = Array("A string that represents null values in the datasets. By default it is '?'"))
+  var nullValueString = "?"
+
   override def run(): Unit = {
     if(help){
       new CommandLine(this).usage(System.err)
@@ -117,6 +120,7 @@ class Main extends Runnable{
 
     val t_ini = System.currentTimeMillis()
     println("Reading data...")
+    problem.setNullValue(nullValueString)
     problem.setNumLabels(numLabels)
     problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
