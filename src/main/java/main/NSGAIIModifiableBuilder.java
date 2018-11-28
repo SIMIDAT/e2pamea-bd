@@ -7,6 +7,7 @@ import org.uma.jmetal.operator.SelectionOperator;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
+import qualitymeasures.QualityMeasure;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,6 +23,18 @@ public class NSGAIIModifiableBuilder<S extends Solution<?>> {
     private SolutionListEvaluator<S> evaluator;
     private Comparator<S> comparator;
     private ArrayList<Operator> operators;
+    private QualityMeasure filter;
+    private double filterThreshold;
+
+    public NSGAIIModifiableBuilder<S> setFilter(QualityMeasure filter){
+        this.filter = filter;
+        return this;
+    }
+
+    public NSGAIIModifiableBuilder<S> setFilterThreshold(double threshold){
+        this.filterThreshold = threshold;
+        return this;
+    }
 
     public NSGAIIModifiableBuilder<S> addOperator(Operator op){
         if(operators == null){
@@ -75,6 +88,8 @@ public class NSGAIIModifiableBuilder<S extends Solution<?>> {
         NSGAIIModifiable<S> algorithm =  new NSGAIIModifiable<S>(problem, maxEvaluations, populationSize, crossoverOperator, mutationOperator, selectionOperator, comparator, evaluator);
         if(operators != null)
             algorithm.addOperators(operators);
+        algorithm.setFilter(filter);
+        algorithm.setFilterThreshold(filterThreshold);
 
         return algorithm;
     }

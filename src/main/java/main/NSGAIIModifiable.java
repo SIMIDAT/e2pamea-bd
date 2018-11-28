@@ -3,6 +3,7 @@ package main;
 import attributes.Clase;
 import evaluator.Evaluator;
 import evaluator.EvaluatorMapReduce;
+import filters.MeasureFilter;
 import filters.TokenCompetitionFilter;
 import operators.selection.RankingAndCrowdingSelection;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
@@ -14,6 +15,8 @@ import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
+import qualitymeasures.Confidence;
+import qualitymeasures.QualityMeasure;
 import reinitialisation.NonEvolutionReinitialisation;
 
 import java.util.ArrayList;
@@ -51,9 +54,38 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
     private NonEvolutionReinitialisation<S> reinitialisation;
 
     /**
+     * The quality measure for the filter
+     */
+    private QualityMeasure filter;
+
+    /**
+     * The threshold of the filter
+     */
+    private double filterThreshold;
+
+
+    /**
      * The minimum count threshold to be set for updating the probabilities.
      */
     private int threshold = 2;
+
+
+    public QualityMeasure getFilter() {
+        return filter;
+    }
+
+    public void setFilter(QualityMeasure filter) {
+        this.filter = filter;
+    }
+
+    public double getFilterThreshold() {
+        return filterThreshold;
+    }
+
+    public void setFilterThreshold(double filterThreshold) {
+        this.filterThreshold = filterThreshold;
+    }
+
 
     public NSGAIIModifiable(Problem problem, int maxEvaluations, int populationSize, CrossoverOperator crossoverOperator, MutationOperator mutationOperator, SelectionOperator selectionOperator, Comparator<S> comparator, SolutionListEvaluator evaluator) {
         super(problem, maxEvaluations, populationSize, crossoverOperator, mutationOperator, selectionOperator, comparator, evaluator);
@@ -108,6 +140,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         population = evaluatePopulation(population);
         int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
         TokenCompetitionFilter<S> tc = new TokenCompetitionFilter<>();
+        MeasureFilter<S> filter = new MeasureFilter<>(getFilter(), filterThreshold);
 
         List<S> newElite = new ArrayList<>();
         for(int i = 0; i < numClasses; i++){
@@ -115,10 +148,17 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             List<S> pop = new ArrayList<>();
             pop.addAll(elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
             pop.addAll(population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
-            newElite.addAll(tc.doFilter(pop,i, (EvaluatorMapReduce) evaluator));
+            pop = tc.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+
+            // Apply the confidence filter
+            pop = filter.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+            newElite.addAll(pop);
         }
 
         elitePopulation = newElite;
+
+        // Apply the filter of confidence
+        QualityMeasure filterMeasure = new Confidence();
     }
 
     @Override

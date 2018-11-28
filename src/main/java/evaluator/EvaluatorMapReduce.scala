@@ -201,6 +201,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         val div = new WRAccNorm()
         div.calculateValue(table)
         diversity.setAttribute(ind, div)
+        table.setAttribute(ind, table)
 
         val objectives = super.calculateMeasures(table)
         for (j <- 0 until objectives.size()) {

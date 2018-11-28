@@ -16,7 +16,7 @@ import org.uma.jmetal.util.pseudorandom.RandomGenerator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
-import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
+import qualitymeasures.{Confidence, QualityMeasure, SuppDiff, WRAccNorm}
 import utils.{Attribute, ResultWriter}
 
 @Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
@@ -72,6 +72,9 @@ class Main extends Runnable{
   @Option(names = Array("-n", "--null"), paramLabel = "STRING", description = Array("A string that represents null values in the datasets. By default it is '?'"))
   var nullValueString = "?"
 
+  @Option(names = Array("-f", "--filter"), paramLabel = "FILTER,THRESHOLD", split=",", description = Array("The filter by measure to be applied. The format must be MEASURE,THRESHOLD, where MEASURE is one of the available quality measures. By default a confidence filter with a threshold=0.6 is applied"))
+  var filter = Array(new Confidence(), 0.6)
+
   override def run(): Unit = {
     if(help){
       new CommandLine(this).usage(System.err)
@@ -100,6 +103,8 @@ class Main extends Runnable{
       arr.add(new SuppDiff)
       arr
     }
+
+    filter(0) = Class.forName(classOf[QualityMeasure].getPackage.getName + "." + filter(0).asInstanceOf[String]).newInstance().asInstanceOf[QualityMeasure]
 
     // Se define el entorno de Spark
     val conf = getConfig
@@ -177,6 +182,8 @@ class Main extends Runnable{
       .setPopulationSize(popSize)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
+      .setFilter(filter(0).asInstanceOf[QualityMeasure])
+      .setFilterThreshold(filter(1).toString.toDouble)
       .addOperator(new HUXCrossover(1, rdob))
       .build()
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
