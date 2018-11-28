@@ -105,6 +105,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         }
 
         // At the end. Perform a token competition procedure and return
+        population = evaluatePopulation(population);
         int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
         TokenCompetitionFilter<S> tc = new TokenCompetitionFilter<>();
 
@@ -236,7 +237,6 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             }
         }
 
-        // AQUI HAY ALGO RARO. ARREGLALO
         if (offspringPopulation.size() != getMaxPopulationSize()) {
             while (offspringPopulation.size() != getMaxPopulationSize())
                 offspringPopulation.remove(offspringPopulation.size() - 1);

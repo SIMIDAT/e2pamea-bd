@@ -74,7 +74,7 @@ public final class FPR extends QualityMeasure {
             if (!(o instanceof FPR)) {
                 throw new InvalidMeasureComparisonException(this, o);
             }
-            return Double.compare(o.value, this.value);
+            return -1 *Double.compare(o.value, this.value);
 
         } catch (InvalidMeasureComparisonException ex) {
             ex.showAndExit(this);

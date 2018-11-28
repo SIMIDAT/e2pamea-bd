@@ -69,6 +69,14 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
         while (population.size() < solutionsToSelect) {
             if (subfrontFillsIntoThePopulation(ranking, rankingIndex, population)) {
                 crowdingDistance.computeDensityEstimator(ranking.getSubfront(rankingIndex));
+                // Here there's a bug where individuals can return a NaN crowding distance because of 0/0 division
+                // Here we need to fix a bug on Dominance Ranking that returns NaN because it can produce 0/0 divisions.
+                ranking.getSubfront(rankingIndex).stream().filter(x -> Double.isNaN( (Double) x.getAttribute(CrowdingDistance.class) ) ).forEach(x -> {
+                    CrowdingDistance<S> crowd = new CrowdingDistance<>();
+                    crowd.setAttribute(x, 0.0);
+                });
+
+
                 addRankedSolutionsToPopulation(ranking, rankingIndex, population);
                 rankingIndex++;
             } else {
