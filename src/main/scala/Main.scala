@@ -16,7 +16,7 @@ import org.uma.jmetal.util.pseudorandom.RandomGenerator
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
-import qualitymeasures.{Confidence, QualityMeasure, SuppDiff, WRAccNorm}
+import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
 import utils.{Attribute, ResultWriter}
 
 @Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
@@ -73,7 +73,7 @@ class Main extends Runnable{
   var nullValueString = "?"
 
   @Option(names = Array("-f", "--filter"), paramLabel = "FILTER,THRESHOLD", split=",", description = Array("The filter by measure to be applied. The format must be MEASURE,THRESHOLD, where MEASURE is one of the available quality measures. By default a confidence filter with a threshold=0.6 is applied"))
-  var filter = Array(new Confidence(), 0.6)
+  var filter: Array[Any] = Array("Confidence", "0.6")
 
   override def run(): Unit = {
     if(help){
