@@ -15,6 +15,7 @@ import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
+import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking;
 import qualitymeasures.Confidence;
 import qualitymeasures.QualityMeasure;
 import reinitialisation.NonEvolutionReinitialisation;
@@ -147,7 +148,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             final int clas = i;
             List<S> pop = new ArrayList<>();
             pop.addAll(elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
-            pop.addAll(population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
+            pop.addAll(population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas && (int) x.getAttribute(DominanceRanking.class) == 0).collect(Collectors.toList()));
             pop = tc.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
 
             // Apply the confidence filter

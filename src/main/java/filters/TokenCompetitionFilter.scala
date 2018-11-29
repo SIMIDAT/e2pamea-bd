@@ -45,7 +45,7 @@ class TokenCompetitionFilter[S <: Solution[_]]{
       tokens = tokens | correct
 
       // As we are covering only tokens of the class. All covered must be set when all examples of the given class are also covered
-      if(tokens.cardinality() == tokens.capacity || (tokens & evaluator.classes(clase)).cardinality() == evaluator.classes(clase).cardinality() ){
+      if(tokens.cardinality() == tokens.capacity ){
         allCovered = true
       }
       counter += 1

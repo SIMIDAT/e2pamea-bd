@@ -81,6 +81,10 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
                 rankingIndex++;
             } else {
                 crowdingDistance.computeDensityEstimator(ranking.getSubfront(rankingIndex));
+                ranking.getSubfront(rankingIndex).stream().filter(x -> Double.isNaN( (Double) x.getAttribute(CrowdingDistance.class) ) ).forEach(x -> {
+                    CrowdingDistance<S> crowd = new CrowdingDistance<>();
+                    crowd.setAttribute(x, 0.0);
+                });
                 addLastRankedSolutionsToPopulation(ranking, rankingIndex, population);
             }
         }
