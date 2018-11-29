@@ -6,6 +6,7 @@ import attributes.{Clase, Coverage}
 import evaluator.EvaluatorMapReduce
 import filters.TokenCompetitionFilter
 import main.{BigDataEPMProblem, NSGAIIModifiable}
+import operators.selection.RankingAndCrowdingSelection
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.Solution
 import org.uma.jmetal.util.JMetalException
@@ -95,8 +96,14 @@ class NonEvolutionReinitialisation[S <: Solution[_]](threshold: Int, numClasses:
     }
 
     // Then, perform the token competition against the individuals of the joint population
-    val newPop = filter.doFilter(popToAdd, classNumber, algorithm.getEvaluator.asInstanceOf[EvaluatorMapReduce])
+    var newPop = filter.doFilter(popToAdd, classNumber, algorithm.getEvaluator.asInstanceOf[EvaluatorMapReduce])
 
+    // Aplicar test de dominancia en la elite y quedarse con el frente de pareto
+    val rankingAndCrowdingSelection = new RankingAndCrowdingSelection[S](newPop.size, algorithm.getDominanceComparator)
+    newPop = rankingAndCrowdingSelection.execute(newPop)
+      .asScala
+      .filter(x => x.getAttribute(classOf[DominanceRanking[S]]).asInstanceOf[Int] == 0)
+      .asJava
 
     // After that, removes in the elite population the indivuals in the elite that belongs to the given class and add all of the newPop
     val elite = algorithm.getElitePopulation.asScala.filter((ind: S) => ind.getAttribute(classOf[Clase[S]]).asInstanceOf[Int] != classNumber)

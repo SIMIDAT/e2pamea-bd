@@ -139,6 +139,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
         // At the end. Perform a token competition procedure and return
         population = evaluatePopulation(population);
+        population = replacement(population, population);
         int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
         TokenCompetitionFilter<S> tc = new TokenCompetitionFilter<>();
         MeasureFilter<S> filter = new MeasureFilter<>(getFilter(), filterThreshold);
@@ -148,8 +149,18 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             final int clas = i;
             List<S> pop = new ArrayList<>();
             pop.addAll(elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()));
-            pop.addAll(population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas && (int) x.getAttribute(DominanceRanking.class) == 0).collect(Collectors.toList()));
+            List<S> a = population.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas && (int) x.getAttribute(DominanceRanking.class) == 0).collect(Collectors.toList());
+            pop.addAll(a);
+
+            // Do token competiton
             pop = tc.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+
+            // Sort the result by dominance and return the pareto front
+            RankingAndCrowdingSelection<S> rankingAndCrowdingSelection = new RankingAndCrowdingSelection<>(pop.size(), dominanceComparator);
+            pop = rankingAndCrowdingSelection.execute(pop)
+                    .stream()
+                    .filter(x -> (int) x.getAttribute(DominanceRanking.class) == 0)
+                    .collect(Collectors.toList());
 
             // Apply the confidence filter
             pop = filter.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
@@ -351,5 +362,9 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
     @Override
     public List<S> getResult() {
         return elitePopulation;
+    }
+
+    public Comparator<S> getDominanceComparator(){
+        return this.dominanceComparator;
     }
 }
