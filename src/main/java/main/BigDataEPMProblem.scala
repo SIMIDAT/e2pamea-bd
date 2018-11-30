@@ -59,7 +59,7 @@ class BigDataEPMProblem extends BinaryProblem{
   /**
     * The initialisation method used
     */
-  private var initialisationMethod: Int = 0
+  private var initialisationMethod: Int = 1
 
   /**
     * The seed of the random number generator
@@ -430,7 +430,7 @@ class BigDataEPMProblem extends BinaryProblem{
     var varInitialised = 0
 
     while(varInitialised != varsToInit){
-      val value = rand.nextInt(0 , getNumberOfVariables)
+      val value = rand.nextInt(0 , getNumberOfVariables - 1)
       if (!initialised.get(value)){
         val set = new BinarySet(sol.getNumberOfBits(value))
         for(i <- 0 until sol.getTotalNumberOfBits){
@@ -441,9 +441,9 @@ class BigDataEPMProblem extends BinaryProblem{
         }
         // check if the generated variable is empty and fix it if necessary
         if(set.cardinality() == 0){
-          set.set(rand.nextInt(0, sol.getNumberOfBits(value)))
+          set.set(rand.nextInt(0, sol.getNumberOfBits(value) - 1))
         } else  if(set.cardinality() == sol.getNumberOfBits(value)){
-          set.clear(rand.nextInt(0, sol.getNumberOfBits(value)))
+          set.clear(rand.nextInt(0, sol.getNumberOfBits(value) - 1))
         }
 
         sol.setVariableValue(value,set)
