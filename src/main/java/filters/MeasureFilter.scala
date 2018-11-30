@@ -28,7 +28,7 @@ class MeasureFilter[S <: Solution[_]](filter: QualityMeasure, threshold: Double)
       })
       a += pop(0)
     } else {
-      a ++= pop
+      a ++= filterPop
     }
 
     a.asJava

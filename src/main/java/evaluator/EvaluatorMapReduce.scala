@@ -401,7 +401,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
             }
             // after that, perform the AND operation
             if (first) {
-              coverages(i) = coverageForVariable
+              coverages(i) = coverageForVariable | coverages(i)
               first = false
             } else {
               coverages(i) = coverages(i) & coverageForVariable
@@ -479,7 +479,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     */
   def getMaxBelongingDegree(problem: Problem[BinarySolution], variable: Int,  x: Double): Double ={
     val problema = problem.asInstanceOf[BigDataEPMProblem]
-    val tope = 10E-13
+    val tope = 10E-12
 
     var max = Double.NegativeInfinity
 

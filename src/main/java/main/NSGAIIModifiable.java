@@ -1,6 +1,7 @@
 package main;
 
 import attributes.Clase;
+import attributes.DiversityMeasure;
 import evaluator.Evaluator;
 import evaluator.EvaluatorMapReduce;
 import filters.MeasureFilter;
@@ -112,7 +113,6 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         population = createInitialPopulation();
         population = evaluatePopulation(population);
 
-
         // Evolutionary process MAIN LOOP:
         int gen = 0;
         while (!isStoppingConditionReached()) {
@@ -131,6 +131,11 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
                     population = evaluatePopulation(population);
                     evaluations += getMaxPopulationSize();
                 }
+            }
+
+            if(gen == 0){
+                // If it is the first population, the elite will be the actual population.
+                population.forEach(x -> elitePopulation.add((S) x.copy()));
             }
 
             // No tocar esto (se actualiza el número de evaluaciones y las probabilidades de aplicación de cada método)
@@ -162,9 +167,25 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
                     .filter(x -> (int) x.getAttribute(DominanceRanking.class) == 0)
                     .collect(Collectors.toList());
 
-            // Apply the confidence filter
-            pop = filter.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+            double avgDiversityPop = pop.stream().mapToDouble(x -> ((QualityMeasure) x.getAttribute(DiversityMeasure.class)).getValue()).sum() / (double) pop.size();
+            double currentAvgDiversityElite = elitePopulation
+                    .stream()
+                    .filter(x -> (int) x.getAttribute(Clase.class) == clas)
+                    .mapToDouble(x -> ((QualityMeasure) x.getAttribute(DiversityMeasure.class)).getValue())
+                    .sum() / (double) elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).count();
+
+            // Substitute the current elite if and only if the avg wracc is better
+            if(avgDiversityPop > currentAvgDiversityElite){
+                pop = filter.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+            } else if (avgDiversityPop == currentAvgDiversityElite){
+                if(pop.size() < elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).count()){
+                    pop = filter.doFilter(pop,i, (EvaluatorMapReduce) evaluator);
+                }
+            } else {
+                pop = filter.doFilter(elitePopulation.stream().filter(x -> (int) x.getAttribute(Clase.class) == clas).collect(Collectors.toList()), i, (EvaluatorMapReduce) evaluator);
+            }
             newElite.addAll(pop);
+
         }
 
         elitePopulation = newElite;

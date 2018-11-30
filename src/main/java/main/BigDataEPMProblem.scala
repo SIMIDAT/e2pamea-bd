@@ -25,6 +25,7 @@ class BigDataEPMProblem extends BinaryProblem{
 
   val RANDOM_INITIALISATION: Int = 0
   val ORIENTED_INITIALISATION: Int = 1
+  val COVERAGE_INITIALISATION: Int = 2
 
   /**
     * The dataset. It contains all the information about the instances
@@ -194,8 +195,25 @@ class BigDataEPMProblem extends BinaryProblem{
     // Create a random individual
     val sol: BinarySolution = if (initialisationMethod == RANDOM_INITIALISATION) { // By default, individuals are initialised at random
       new DefaultBinarySolution(this)
-    } else { //if (initialisationMethod == ORIENTED_INITIALISATION) { // Oriented initialisation
+    } else if (initialisationMethod == ORIENTED_INITIALISATION) { // Oriented initialisation
       OrientedInitialisation(0.25)
+    } else if (initialisationMethod == COVERAGE_INITIALISATION){
+      // Get the pairs that cover that example.
+      // Get the pairs that cover that example.
+      /*val pairs : ArrayBuffer[(Int, Int)] = new ArrayBuffer[(Int, Int)]()
+      for(i <- eval.sets.indices){
+        // for each variable
+        for(j <- eval.sets(i).indices){
+          // for each value
+          if(eval.sets(i)(j).get(example)){
+            val add = (i,j)
+            pairs += add
+          }
+        }
+      }*/
+      new DefaultBinarySolution(this)
+    } else {
+      new DefaultBinarySolution(this)
     }
 
     clase.setAttribute(sol, clas)

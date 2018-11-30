@@ -140,6 +140,9 @@ class Main extends Runnable{
     }
     println("Number of features: " + features)
 
+    val rdob :RandomGenerator[java.lang.Double] = new RandomGenerator[java.lang.Double] {
+      override def getRandomValue: java.lang.Double = problem.rand.nextDouble()
+    }
 
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
@@ -156,6 +159,7 @@ class Main extends Runnable{
     val mutationProbability: Double = 1.0
     val mutationDistributionIndex: Double = 20.0
     val mutation = new BiasedMutationDNF(mutationProbability, problem.rand) //new PolynomialMutation(mutationProbability, mutationDistributionIndex)
+    //val mutation = new BitFlipMutation(1,rdob)
 
     // Operador de seleccion
     val selection = new BinaryTournamentSelection[BinarySolution](new RankingAndCrowdingDistanceComparator[BinarySolution])
@@ -170,21 +174,21 @@ class Main extends Runnable{
       .setPopulationSize(100).setDominanceComparator(dominanceComparator)
       .setSolutionListEvaluator(evaluador)
       .build*/
-    val rdob :RandomGenerator[java.lang.Double] = new RandomGenerator[java.lang.Double] {
-      override def getRandomValue: java.lang.Double = problem.rand.nextDouble()
-    }
+
     val algorithm = new NSGAIIModifiableBuilder[BinarySolution]
       .setProblem(problem)
       .setCrossoverOperator(crossover.asInstanceOf[CrossoverOperator[BinarySolution]])
       .setMutationOperator(mutation)
       .setSelectionOperator(selection)
       .setMaxEvaluations(maxEvals)
-      .setPopulationSize(popSize)
+      .setPopulationSize(popSize * problem.getNumberOfClasses)
       .setDominanceComparator(dominanceComparator)
       .setEvaluator(evaluador)
       .setFilter(filter(0).asInstanceOf[QualityMeasure])
       .setFilterThreshold(filter(1).toString.toDouble)
       .addOperator(new HUXCrossover(1, rdob))
+      //.addOperator(new BitFlipMutation(1,rdob))
+      //.addOperator(new SinglePointCrossover(1, rdob))
       .build()
     //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
 

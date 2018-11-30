@@ -36,13 +36,14 @@ class TokenCompetitionFilter[S <: Solution[_]]{
       val clase = orderPop(counter).getAttribute(classOf[Clase[S]]).asInstanceOf[Int]
 
       // covered examples that belongs to the class
-      val correct = coverage & evaluator.classes(clase)
+     val correct = coverage & evaluator.classes(clase)
 
       val newCov = (tokens ^ correct) & (~tokens)
       if(newCov.cardinality() > 0){
-        result.add(orderPop(counter))
+        result.add(orderPop(counter).copy().asInstanceOf[S])
       }
       tokens = tokens | correct
+
 
       // As we are covering only tokens of the class. All covered must be set when all examples of the given class are also covered
       if(tokens.cardinality() == tokens.capacity ){
@@ -53,7 +54,7 @@ class TokenCompetitionFilter[S <: Solution[_]]{
     } while(counter < orderPop.size && !allCovered)
 
     if(result.isEmpty){
-      result.add(orderPop(0))
+      result.add(orderPop(0).copy().asInstanceOf[S])
     }
 
     result
