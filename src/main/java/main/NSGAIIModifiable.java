@@ -127,6 +127,7 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
             for(int i = 0; i < numClasses; i++) {
                 if (reinitialisation.checkReinitialisation(population, problem, evaluations, i )) {
+                    System.out.println("Re-inicio en clase: " + i + " evaluaciones: " + evaluations + "/" + maxEvaluations);
                     population = reinitialisation.doReinitialisation(population, problem, evaluations, i, this);
                     population = evaluatePopulation(population);
                     evaluations += getMaxPopulationSize();

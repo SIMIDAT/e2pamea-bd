@@ -424,7 +424,7 @@ class BigDataEPMProblem extends BinaryProblem{
   def OrientedInitialisation(pctVariables: Double): DefaultBinarySolution = {
     val sol = new DefaultBinarySolution(this)
     val maxVariablesToInitialise = Math.round(pctVariables * getNumberOfVariables)
-    val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt + 1)
+    val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt)
 
     val initialised = new BitSet(getNumberOfVariables)
     var varInitialised = 0
@@ -433,7 +433,7 @@ class BigDataEPMProblem extends BinaryProblem{
       val value = rand.nextInt(0 , getNumberOfVariables - 1)
       if (!initialised.get(value)){
         val set = new BinarySet(sol.getNumberOfBits(value))
-        for(i <- 0 until sol.getTotalNumberOfBits){
+        for(i <- 0 until sol.getNumberOfBits(value)){
           if(rand.nextDouble(0.0, 1.0) <= 0.5)
             set.set(i)
           else

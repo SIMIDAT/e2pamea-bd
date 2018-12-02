@@ -140,10 +140,11 @@ class NonEvolutionReinitialisation[S <: Solution[_]](threshold: Int, numClasses:
     val eval = algorithm.getEvaluator.asInstanceOf[EvaluatorMapReduce]
     val examplesClassNotCovered = ~(coverageTotal & eval.classes(classNumber)) & eval.classes(classNumber)
 
+    lastChange(classNumber) = generationNumber
     if(examplesClassNotCovered.cardinality() > 0){
       // Coverage-based re-initialisation. Get one example not covered and try to cover it.
       var example = examplesClassNotCovered.nextSetBit(0)
-      lastChange(classNumber) = generationNumber
+
 
       // Try to generate individuals that covers that example
       if(eval.bigDataProcessing){
