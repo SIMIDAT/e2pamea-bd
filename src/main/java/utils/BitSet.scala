@@ -17,6 +17,7 @@
 
 package utils
 
+import java.util
 import java.util.Arrays
 
 /**
@@ -25,8 +26,8 @@ import java.util.Arrays
   */
 class BitSet(numBits: Int) extends Serializable {
 
-  private val words = new Array[Long](bit2words(numBits))
-  private val numWords = words.length
+  private var words = new Array[Long](bit2words(numBits))
+  private var numWords = words.length
 
   /**
     * Compute the capacity (number of bits) that can be represented
@@ -176,11 +177,13 @@ class BitSet(numBits: Int) extends Serializable {
     * @param index the bit index
     */
   def set(index: Int) {
+    this.expandTo(index >> 6)
     val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
     words(index >> 6) |= bitmask        // div by 64 and mask
   }
 
   def unset(index: Int) {
+    this.expandTo(index >> 6)
     val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
     words(index >> 6) &= ~bitmask        // div by 64 and mask
   }
@@ -276,5 +279,20 @@ class BitSet(numBits: Int) extends Serializable {
       }
     }
     result
+  }
+
+  private def ensureCapacity(var1: Int): Unit = {
+    if (this.words.length < var1) {
+      val var2: Int = Math.max(2 * this.words.length, var1)
+      this.words = util.Arrays.copyOf(this.words, var2)
+    }
+  }
+
+  private def expandTo(var1: Int): Unit = {
+    val var2: Int = var1 + 1
+    if (this.numWords < var2) {
+      this.ensureCapacity(var2)
+      this.numWords = var2
+    }
   }
 }

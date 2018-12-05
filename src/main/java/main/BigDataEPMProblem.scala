@@ -295,7 +295,7 @@ class BigDataEPMProblem extends BinaryProblem{
       .option("comment", "@")
       .option("nullValue", nullValue)
       .option("mode", "FAILFAST")   // This mode throws an error on any malformed line is encountered
-      .schema(schema).csv(path)
+      .schema(schema).csv(path).repartition(this.numPartitions)
 
     dataset = zipWithIndex(dataset,0)
     dataset.cache()

@@ -66,18 +66,23 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       }
       // Calculate the bitsets for the variables
       sets = problema.getDataset.rdd.mapPartitions(x => {
-
+        var min = Int.MaxValue
+        var max = -1
         // Instatiate the whole bitsets structure for each partition with length equal to the length of data
         val partialSet = new ArrayBuffer[ArrayBuffer[BitSet]]()
         for (i <- 0 until (attrs.length - 1)) {
           partialSet += new ArrayBuffer[BitSet]()
           for (j <- 0 until attrs(i).numValues) {
-            partialSet(i) += new BitSet(length.toInt)
+            partialSet(i) += new BitSet(0)
           }
         }
 
+        var counter = 0
         x.foreach(f = y => {
           val index = y.getLong(0).toInt
+          if(index < min) min = index
+          if(index > max) max = index
+
           for (i <- attrs.indices.dropRight(1)) {
             val ind = i + 1
             // For each attribute
@@ -86,40 +91,57 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
               if (attrs(i).isNumeric) {
                 // Numeric variable, fuzzy computation
                 if (y.isNullAt(ind)) {
-                  partialSet(i)(j).set(index)
+                  partialSet(i)(j).set(counter)
                 } else {
                   if (problema.calculateBelongingDegree(i, j, y.getDouble(ind)) >= getMaxBelongingDegree(problema, i, y.getDouble(ind))) {
-                    partialSet(i)(j).set(index)
+                    partialSet(i)(j).set(counter)
                   } else {
-                    partialSet(i)(j).unset(index)
+                    partialSet(i)(j).unset(counter)
                   }
                 }
               } else {
                 // Discrete variable
                 if (y.isNullAt(ind)) {
-                  partialSet(i)(j).set(index)
+                  partialSet(i)(j).set(counter)
                 } else {
                   if (attrs(i).valueName(j).equals(y.getString(ind))) {
-                    partialSet(i)(j).set(index)
+                    partialSet(i)(j).set(counter)
                   } else {
-                    partialSet(i)(j).unset(index)
+                    partialSet(i)(j).unset(counter)
                   }
                 }
               }
             }
           }
+          counter += 1
         })
-        val aux = new Array[ArrayBuffer[ArrayBuffer[BitSet]]](1)
-        aux(0) = partialSet
+        val aux = new Array[(Int, Int, ArrayBuffer[ArrayBuffer[BitSet]]) ](1)
+        aux(0) = (min, max, partialSet)
         aux.iterator
-      }).reduce((x, y) => {
-        for (i <- x.indices) {
-          for (j <- x(i).indices) {
-            x(i)(j) = x(i)(j) | y(i)(j)
+      }).treeReduce((x, y) => {
+        val min = Array(x._1, y._1).min
+        val max = Array(x._2, y._2).max
+
+
+        for (i <- x._3.indices) {
+          for (j <- x._3(i).indices) {
+            var pos = -1
+            val Bs = new BitSet(max - min)
+            while (x._3(i)(j).nextSetBit(pos + 1) >= 0){
+              pos = x._3(i)(j).nextSetBit(pos + 1)
+              Bs.set(pos + x._1 - min)
+            }
+            pos = -1
+            while (y._3(i)(j).nextSetBit(pos + 1) >= 0){
+              pos = y._3(i)(j).nextSetBit(pos + 1)
+              Bs.set(pos + y._1 - min)
+            }
+            x._3(i)(j) = Bs
           }
         }
-        x
-      })
+
+        (min, max, x._3)
+      }, 6)._3
 
       // Calculate the bitsets for the classes
       val numclasses = attrs.last.numValues
