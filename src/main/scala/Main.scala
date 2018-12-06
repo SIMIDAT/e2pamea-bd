@@ -114,7 +114,7 @@ class Main extends Runnable{
       // use this if you need to increment Kryo buffer max size. Default 64m
       .config("spark.kryoserializer.buffer.max", "1024m")
       .appName("Nuevo-MOEA")
-      .master("local[*]")
+      //.master("local[*]")
       .getOrCreate()
 
 

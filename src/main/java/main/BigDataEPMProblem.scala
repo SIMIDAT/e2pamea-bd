@@ -274,7 +274,7 @@ class BigDataEPMProblem extends BinaryProblem{
   def readDataset(path: String, numPartitions: Int, spark: SparkSession): Unit = {
     this.spark = spark
     this.numPartitions = numPartitions
-    val listValues = spark.sparkContext.textFile(path)
+    val listValues = spark.sparkContext.textFile(path, this.numPartitions)
       .filter(x => x.startsWith("@"))
       .filter(x => !x.toLowerCase.startsWith("@relation"))
       .filter(x => !x.toLowerCase.startsWith("@data"))
@@ -287,7 +287,7 @@ class BigDataEPMProblem extends BinaryProblem{
       } else {
         StructField(values(1), StringType, true)
       }
-    }).collect()
+    }).coalesce(this.numPartitions).collect()
 
     val schema = StructType(listValues)
 
@@ -295,10 +295,9 @@ class BigDataEPMProblem extends BinaryProblem{
       .option("comment", "@")
       .option("nullValue", nullValue)
       .option("mode", "FAILFAST")   // This mode throws an error on any malformed line is encountered
-      .schema(schema).csv(path).repartition(this.numPartitions)
+      .schema(schema).csv(path).coalesce(this.numPartitions)
 
     dataset = zipWithIndex(dataset,0)
-    dataset.cache()
     numExamples = dataset.count().toInt
   }
 
@@ -472,6 +471,7 @@ class BigDataEPMProblem extends BinaryProblem{
     */
   def zipWithIndex(df: DataFrame, offset: Long = 1, indexName: String = "index") = {
     val columnNames = Array(indexName) ++ df.columns
+    df.repartition(this.numPartitions)
     val dfWithPartitionId = df.withColumn("partition_id", spark_partition_id()).withColumn("inc_id", monotonically_increasing_id())
 
     val partitionOffsets = dfWithPartitionId
@@ -487,7 +487,7 @@ class BigDataEPMProblem extends BinaryProblem{
       .withColumn("partition_offset", udf((partitionId: Int) => partitionOffsets(partitionId), LongType)(col("partition_id")))
       .withColumn(indexName, col("partition_offset") + col("inc_id"))
       .drop("partition_id", "partition_offset", "inc_id")
-      .select(columnNames.head, columnNames.tail: _*)
+      .select(columnNames.head, columnNames.tail: _*).cache()
   }
 
 

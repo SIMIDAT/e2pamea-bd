@@ -64,6 +64,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       for (i <- 0 until attrs.last.numValues) {
         classes += new BitSet(length.toInt)
       }
+      
       // Calculate the bitsets for the variables
       sets = problema.getDataset.rdd.mapPartitions(x => {
         var min = Int.MaxValue
