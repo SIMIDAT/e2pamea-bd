@@ -200,6 +200,51 @@ class BitSet(numBits: Int) extends Serializable {
     (words(index >> 6) & bitmask) != 0  // div by 64 and mask
   }
 
+
+  /**
+    * Returns a subset of the current bitset formed from bits from var1 to var2
+    *
+    * @param var1
+    * @param var2
+    * @return
+    */
+  def get(var1: Int, var2: Int): BitSet = {
+    //checkRange(var1, var2)
+    //this.checkInvariants()
+    val var3 = this.capacity
+    if (var3 > var1 && var1 != var2) {
+      val v2: Int = if (var2 > var3) var3 else var2
+      val var4 = new BitSet(v2 - var1)
+      val var5 = wordIndex(v2 - var1 - 1) + 1
+      var var6 = wordIndex(var1)
+      val var7 = (var1 & 63) == 0
+      var var8 = 0
+      while (var8 < var5 - 1) {
+        var4.words(var8) = if (var7)
+          this.words(var6)
+        else
+          this.words(var6) >>> var1 | this.words(var6 + 1) << -var1
+        var8 += 1
+        var6 += 1; var6
+
+      }
+      val var10 = -1L >>> -var2
+      var4.words(var5 - 1) = if ((var2 - 1 & 63) < (var1 & 63)) this.words(var6) >>> var1 | (this.words(var6 + 1) & var10) << -var1
+      else (this.words(var6) & var10) >>> var1
+      var4.numWords = var5
+      var counter = this.numWords - 1
+      while(counter >= 0 && this.words(counter) == 0L){
+        counter -= 1
+      }
+      this.numWords = counter + 1
+      //var4.recalculateWordsInUse()
+      //var4.checkInvariants()
+      var4
+    } else
+      new BitSet(0)
+  }
+
+
   /**
     * Get an iterator over the set bits.
     */
@@ -294,5 +339,12 @@ class BitSet(numBits: Int) extends Serializable {
       this.ensureCapacity(var2)
       this.numWords = var2
     }
+  }
+
+
+
+
+  private def wordIndex(i: Int): Int = {
+    i >> 6
   }
 }
