@@ -76,6 +76,7 @@ class Main extends Runnable{
   var filter: Array[Any] = Array("Confidence", "0.6")
 
   override def run(): Unit = {
+
     if(help){
       new CommandLine(this).usage(System.err)
       return
@@ -120,6 +121,7 @@ class Main extends Runnable{
 
     if(!verbose) spark.sparkContext.setLogLevel("ERROR")
 
+
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
@@ -147,7 +149,7 @@ class Main extends Runnable{
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
     evaluador.setObjectives(objs)
-    evaluador.setBigDataProcessing(false)
+    evaluador.setBigDataProcessing(true)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx

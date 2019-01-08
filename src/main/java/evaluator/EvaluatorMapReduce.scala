@@ -425,6 +425,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         //val sets = y._1
         val min = y(0)(0)._1
         val max = y(0)(0)._2
+        var popCoverage = new BitSet(max - min)
 
         val coverages = new Array[BitSet](solutionList.size())
         for (i <- coverages.indices) {
@@ -461,7 +462,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
             coverages(i) = new BitSet(y(0)(0)._3.capacity)
           }
           // tp = covered AND belong to the class
-          val tp = coverages(i) & classes(clase).get(min, max) // Hay que corregir esto. coverages y clases NO SON DEL MISMO TAMAÑO!
+          val tp = coverages(i) & classes(clase).get(min, max)
 
           // tn = NOT covered AND DO NOT belong to the class
           val tn = (~coverages(i)) & (~classes(clase).get(min, max))
@@ -472,28 +473,16 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           // fn = NOT covered AND belong to the class
           val fn = (~coverages(i)) & classes(clase).get(min, max)
           tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
+          popCoverage = popCoverage | coverages(i)
         }
 
+        val result = new BitSet(min) ++ popCoverage
+        // Hay que enviar si o si las coberturas en vez de las matrice de confusión para que se añadan a los inds. y puedan ser usadas en a reinicializacion
+        // DEBES PROBAR A USAR UN ACCUMULADOR en un bitset que use represente la cobertura total de la población.
+        // Luego, puedes usar token competition también en paralelo.
+        
         tables
 
-
-        // Now that we have all coverages for these partial bitsets. Calculates the partial contingency table
-
-
-        /*for (i <- 0 until solutionList.size()) { // For all the individuals
-          val ind = solutionList.get(i)
-          if (participates(ind, 0)) {
-            // Perform OR operations between active elements in the DNF rule.
-            for (j <- 0 until ind.getNumberOfBits(0)) {
-              if (ind.getVariableValue(0).get(j)) {
-                ors(i) = ors(i) | ors(i)
-              }
-            }
-          } else { // If the variable does not participe, fill the bitset with 1 so the and operations are not affected.
-            ors(i).setUntil(ors(i).capacity)
-          }
-        }
-        (0, 0, ors, 0)*/
       })
       bits
     }).treeReduce((x, y) => {

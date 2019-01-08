@@ -113,6 +113,7 @@ class BigDataEPMProblem extends BinaryProblem{
   private var nullValue = "?"
 
 
+
   def setNullValue(value: String): Unit = {nullValue = value}
 
   /**
@@ -299,6 +300,7 @@ class BigDataEPMProblem extends BinaryProblem{
 
     dataset = zipWithIndex(dataset,0)
     numExamples = dataset.count().toInt
+
   }
 
 

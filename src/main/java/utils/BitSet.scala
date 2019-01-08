@@ -347,4 +347,30 @@ class BitSet(numBits: Int) extends Serializable {
   private def wordIndex(i: Int): Int = {
     i >> 6
   }
+
+  /**
+    * It concatenates two BitSets
+    * @param other
+    * @return
+    */
+  def ++(other: BitSet) : BitSet = {
+
+    val a = new BitSet(0)
+    a.words = this.words ++ other.words
+    a.numWords = this.numWords + other.numWords
+
+    a
+  }
+
+
+  /**
+    * It sets from min to max the values of the given BitSet into this.
+    *
+    * @param min
+    * @param max
+    * @param other
+    */
+  def set(min: Int, max: Int, other: BitSet): Unit = {
+
+  }
 }
