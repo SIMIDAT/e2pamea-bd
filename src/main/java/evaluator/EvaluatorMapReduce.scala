@@ -5,6 +5,7 @@ import java.util
 import attributes.{Clase, Coverage, DiversityMeasure}
 import main.BigDataEPMProblem
 import org.apache.spark.rdd.RDD
+import org.apache.spark.util.SizeEstimator
 import org.uma.jmetal.problem.Problem
 import org.uma.jmetal.solution.{BinarySolution, Solution}
 import org.uma.jmetal.util.solutionattribute.impl.DominanceRanking
@@ -17,6 +18,8 @@ import scala.collection.mutable.ArrayBuffer
   * Class for the use of an improved DNF evaluator with MapReduce
   */
 class EvaluatorMapReduce extends Evaluator[BinarySolution] {
+
+
 
 
   /**
@@ -101,15 +104,12 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       //println("total sample: " + length + "  class 0: " + classes(0).cardinality() + "  class 1: " + classes(1).cardinality())
       super.setProblem(problema)
-      /*if(bigDataProcessing){
-        bitSets = problema.spark.sparkContext.parallelize(sets, problema.getNumPartitions()).zipWithIndex()
-        bitSets.cache()
-        sets = null
+      if(bigDataProcessing){
         println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(bitSets) / Math.pow(1000, 2)) + " MB.")
       } else {
         println("Pre-calculation time: " + (System.currentTimeMillis() - t_ini) + " ms. Size of Structure: " + (SizeEstimator.estimate(sets) / Math.pow(1000, 2)) + " MB.")
 
-      }*/
+      }
       problema.getDataset.unpersist()
 
     }
@@ -141,7 +141,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           for (j <- 0 until objectives.size()) {
             ind.setObjective(j, objectives.get(j).getValue)
           }
-
+          cove.setAttribute(ind, tables(i).getCoverage)
         } else {
 
           // If the rule is empty, set the fitness at minimum possible value for all the objectives.
@@ -419,6 +419,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     */
   def calculateBigData(solutionList: util.List[BinarySolution], problem: Problem[BinarySolution]): Array[ContingencyTable] = {
 
+    val numExamples = problem.asInstanceOf[BigDataEPMProblem].getNumExamples
     bitSets.mapPartitions(x => {
       val bits = x.map(y => {
         //val index = y._2.toInt
@@ -472,11 +473,16 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
           // fn = NOT covered AND belong to the class
           val fn = (~coverages(i)) & classes(clase).get(min, max)
-          tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
-          popCoverage = popCoverage | coverages(i)
+
+          // Add to the bitSet zeros before min and max in order to have a full-length BitSet.
+          // This allows us to perform OR operations on the reduce for the final coverage of the individual
+          coverages(i) = new BitSet(min).concatenate(min + 1, coverages(i), max - (min + 1)).concatenate(max + 1, new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
+
+          tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality(), coverages(i))
+
+          //popCoverage = popCoverage | coverages(i)
         }
 
-        val result = new BitSet(min) ++ popCoverage
         // Hay que enviar si o si las coberturas en vez de las matrice de confusión para que se añadan a los inds. y puedan ser usadas en a reinicializacion
         // DEBES PROBAR A USAR UN ACCUMULADOR en un bitset que use represente la cobertura total de la población.
         // Luego, puedes usar token competition también en paralelo.
@@ -492,10 +498,11 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         val fp = x(i).getFp + y(i).getFp
         val tn = x(i).getTn + y(i).getTn
         val fn = x(i).getFn + y(i).getFn
-        tables(i) = new ContingencyTable(tp, fp, tn, fn)
+        val cove = x(i).getCoverage | y(i).getCoverage
+        tables(i) = new ContingencyTable(tp, fp, tn, fn, cove)
       }
       tables
-    })
+    }, Evaluator.TREE_REDUCE_DEPTH)
 
   }
 

@@ -26,6 +26,7 @@ package qualitymeasures;
 import exceptions.InvalidContingencyTableException;
 import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.util.solutionattribute.impl.GenericSolutionAttribute;
+import utils.BitSet;
 
 /**
  * Class to represent a contingency table.
@@ -53,7 +54,12 @@ public class ContingencyTable extends GenericSolutionAttribute<BinarySolution, C
      * The false negatives
      */
     private int fn;
-    
+
+    /**
+     * The individual coverage
+     */
+    private BitSet coverage;
+
     /**
      * The Contingency Table constructor.
      * 
@@ -68,7 +74,19 @@ public class ContingencyTable extends GenericSolutionAttribute<BinarySolution, C
         this.fp = fp;
         this.tn = tn;
     }
-    
+
+
+    public ContingencyTable(int tp, int fp, int tn, int fn, BitSet cove){
+        this.tp = tp;
+        this.fn = fn;
+        this.fp = fp;
+        this.tn = tn;
+        this.coverage = cove;
+    }
+
+    public BitSet getCoverage(){
+        return coverage;
+    }
 
     /**
      * @return the tp

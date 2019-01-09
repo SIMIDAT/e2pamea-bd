@@ -16,6 +16,9 @@ import java.util.ArrayList;
  */
 public abstract class Evaluator<S extends Solution> implements SolutionListEvaluator<S> {
 
+
+    public static final int TREE_REDUCE_DEPTH = 2;
+
     /**
      * The objectives to be used in the evaluator.
      * These are the objectives employed for guiding the search process and they are used only for its identification.

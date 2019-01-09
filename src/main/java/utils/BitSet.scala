@@ -17,6 +17,7 @@
 
 package utils
 
+import java.math.BigInteger
 import java.util
 import java.util.Arrays
 
@@ -373,4 +374,48 @@ class BitSet(numBits: Int) extends Serializable {
   def set(min: Int, max: Int, other: BitSet): Unit = {
 
   }
+
+
+  /**
+    * It concatenates two BitSets from the specified threshold of {@code this} until the {@code length} of {@code two}
+    * @param threshold1
+    * @param two
+    * @param length
+    * @return
+    */
+  def concatenate(threshold1: Int, two: BitSet, length: Int): BitSet = {
+
+    if(this.capacity == 0 || threshold1 == 0){
+      return two
+    }
+
+    if(two.capacity == 0 || length == 0)
+      return this
+
+    val totalSize = threshold1 + length
+    val totalWords = wordIndex(threshold1 + length) + 1
+    val newWords = new Array[Long](totalWords)
+    val word = wordIndex(threshold1)
+    val position = threshold1 % 64 // position of the last element of the first bitset.
+    val displacement = 64 - position
+
+    var length1 = this.numWords - 1
+
+    val toRet = this ++ two
+
+    while(length1 < toRet.words.length - 1){
+      toRet.words(length1) = toRet.words(length1 + 1) << position | toRet.words(length1) >>> displacement
+      length1 += 1
+    }
+    toRet.words(length1) = toRet.words(length1) << position //toRet.words(length1) << position
+
+    for(i <- 0 until totalWords){
+      newWords(i) = toRet.words(i)
+    }
+    toRet.words = newWords
+    toRet.numWords = totalWords
+
+    toRet
+  }
+
 }
