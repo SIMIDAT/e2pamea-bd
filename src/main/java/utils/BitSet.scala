@@ -30,6 +30,8 @@ class BitSet(numBits: Int) extends Serializable {
   private var words = new Array[Long](bit2words(numBits))
   private var numWords = words.length
 
+  private val lastPosition = numBits % 64
+
   /**
     * Compute the capacity (number of bits) that can be represented
     * by this bitset.
@@ -264,10 +266,13 @@ class BitSet(numBits: Int) extends Serializable {
   def cardinality(): Int = {
     var sum = 0
     var i = 0
-    while (i < numWords) {
+    while (i < numWords - 1) {
       sum += java.lang.Long.bitCount(words(i))
       i += 1
     }
+    var a = words(i) >>> (64 - lastPosition)
+    a = a << lastPosition
+    sum += java.lang.Long.bitCount(a)
     sum
   }
 
@@ -417,5 +422,20 @@ class BitSet(numBits: Int) extends Serializable {
 
     toRet
   }
+
+
+  override def equals(obj: Any): Boolean = {
+    val other = obj.asInstanceOf[BitSet]
+
+    if(this.capacity != other.capacity) return false
+
+    for(i <- words.indices){
+      if(this.words(i) != other.words(i)) return false
+    }
+
+    return true
+  }
+
+
 
 }

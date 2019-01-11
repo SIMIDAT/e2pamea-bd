@@ -75,6 +75,9 @@ class Main extends Runnable{
   @Option(names = Array("-f", "--filter"), paramLabel = "FILTER,THRESHOLD", split=",", description = Array("The filter by measure to be applied. The format must be MEASURE,THRESHOLD, where MEASURE is one of the available quality measures. By default a confidence filter with a threshold=0.6 is applied"))
   var filter: Array[Any] = Array("Confidence", "0.6")
 
+  @Option(names = Array("-B", "--bigdata"), description = Array("If set, the evaluation in the evolutionary process is performed on the optimised BitSet structure by means of an RDD. This means that for each generation, a MapReduce procedure is triggered for evaluating the individuals. RECOMMENDED FOR VERY BIG DATA SETS."))
+  var bigDataProcessing = false
+
   override def run(): Unit = {
 
     if(help){
@@ -149,7 +152,7 @@ class Main extends Runnable{
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
     evaluador.setObjectives(objs)
-    evaluador.setBigDataProcessing(true)
+    evaluador.setBigDataProcessing(bigDataProcessing)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx

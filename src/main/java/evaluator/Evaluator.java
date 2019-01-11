@@ -8,6 +8,7 @@ import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * An evaluator of individuals to be used in an evolutionary algorithm
@@ -26,6 +27,7 @@ public abstract class Evaluator<S extends Solution> implements SolutionListEvalu
     private ArrayList<QualityMeasure>  objectives;
 
     private Problem<S> problem;
+
 
 
     /**

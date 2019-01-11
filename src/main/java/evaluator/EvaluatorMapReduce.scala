@@ -1,8 +1,10 @@
 package evaluator
 
 import java.util
+import java.util.logging.Logger
 
-import attributes.{Clase, Coverage, DiversityMeasure}
+import attributes.{Clase, Coverage, DiversityMeasure, TestMeasures}
+import exceptions.InvalidRangeInMeasureException
 import main.BigDataEPMProblem
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.SizeEstimator
@@ -43,6 +45,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     * It determines if the evaluation must be performed using the RDD (distributed) or the ArrayBuffer (local)
     */
   var bigDataProcessing = true
+
 
   /**
     * It initialises the bitset structure employed for the improved evaluation.
@@ -232,71 +235,72 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       calculateBigData(solutionList, problem)
     } else {
       val coverages = calculateCoveragesNonBigData(solutionList, problem)
+      val tables = new Array[ContingencyTable](coverages.length)
+      for (i <- coverages.indices) {
+        val ind = solutionList.get(i)
+        val cove = new Coverage[BinarySolution]()
+        val diversity = new DiversityMeasure[BinarySolution]()
+
+        if (!isEmpty(ind)) {
+          cove.setAttribute(ind, coverages(i))
+          val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
+
+          // tp = covered AND belong to the class
+          val tp = coverages(i) & classes(clase)
+
+          // tn = NOT covered AND DO NOT belong to the class
+          val tn = (~coverages(i)) & (~classes(clase))
+
+          // fp = covered AND DO NOT belong to the class
+          val fp = coverages(i) & (~classes(clase))
+
+          // fn = NOT covered AND belong to the class
+          val fn = (~coverages(i)) & classes(clase)
+
+          tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality(), coverages(i))
+        } else {
+          tables(i) = new ContingencyTable(0, 0, 0, 0)
+        }
+      }
+        tables
+
     }
 
-    // Calculate the contingency table for each individual
-    /*for (i <- coverages.indices) {
-      val ind = solutionList.get(i)
-      val cove = new Coverage[BinarySolution]()
-      val diversity = new DiversityMeasure[BinarySolution]()
+     for(i <- table.indices){
+       val ind = solutionList.get(i)
+       val cove = new Coverage[BinarySolution]()
+       val diversity = new DiversityMeasure[BinarySolution]()
 
-      if (!isEmpty(ind)) {
-        cove.setAttribute(ind, coverages(i))
-        val clase = ind.getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
+       if(!isEmpty(ind)){
+         val measures = utils.ClassLoader.getClasses
 
-        // tp = covered AND belong to the class
-        val tp = coverages(i) & classes(clase)
+         for(q <- 0 until measures.size()){
+           try{
+             measures.get(q).calculateValue(table(i))
+             measures.get(q).validate()
+           } catch {
+             case ex: InvalidRangeInMeasureException =>
+               System.err.println("Error while evaluating Individuals in test: ")
+               ex.showAndExit(this)
+           }
+         }
+         val test = new TestMeasures[BinarySolution]()
+         test.setAttribute(ind, measures)
+         table(i).setAttribute(ind, table(i))
 
-        // tn = NOT covered AND DO NOT belong to the class
-        val tn = (~coverages(i)) & (~classes(clase))
-
-        // fp = covered AND DO NOT belong to the class
-        val fp = coverages(i) & (~classes(clase))
-
-        // fn = NOT covered AND belong to the class
-        val fn = (~coverages(i)) & classes(clase)
-
-        new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality())
-
-        val measures = utils.ClassLoader.getClasses
-        for(q <- 0 until measures.size()){
-          try{
-          measures.get(q).calculateValue(table)
-          measures.get(q).validate()
-          } catch {
-            case ex: InvalidRangeInMeasureException =>
-              System.err.println("Error while evaluating Individuals: ")
-              ex.showAndExit(this)
-          }
-        }
-        /*measures.forEach((q: QualityMeasure) => {
-          try {
-            q.calculateValue(table)
-            q.validate()
-          } catch {
-            case ex: InvalidRangeInMeasureException =>
-              System.err.println("Error while evaluating Individuals: ")
-              ex.showAndExit(this)
-          }
-        })*/
-
-        val test = new TestMeasures[BinarySolution]()
-        test.setAttribute(ind, measures)
-        table.setAttribute(ind, table)
-
-      } else {
-        // If the rule is empty, set the fitness at minimum possible value for all the objectives.
-        for (j <- 0 until ind.getNumberOfObjectives) {
-          ind.setObjective(j, Double.NegativeInfinity)
-        }
-        val div = new WRAccNorm()
-        val rank = new DominanceRanking[BinarySolution]()
-        div.setValue(Double.NegativeInfinity)
-        rank.setAttribute(ind, Integer.MAX_VALUE)
-        cove.setAttribute(ind, new BitSet(coverages(i).capacity))
-        diversity.setAttribute(ind, div)
-      }
-    }*/
+       } else {
+         // If the rule is empty, set the fitness at minimum possible value for all the objectives.
+         for (j <- 0 until ind.getNumberOfObjectives) {
+           ind.setObjective(j, Double.NegativeInfinity)
+         }
+         val div = new WRAccNorm()
+         val rank = new DominanceRanking[BinarySolution]()
+         div.setValue(Double.NegativeInfinity)
+         rank.setAttribute(ind, Integer.MAX_VALUE)
+         //cove.setAttribute(ind, new BitSet(coverages(i).capacity))
+         diversity.setAttribute(ind, div)
+       }
+     }
 
     // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
@@ -463,22 +467,15 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
             coverages(i) = new BitSet(y(0)(0)._3.capacity)
           }
           // tp = covered AND belong to the class
-          val tp = coverages(i) & classes(clase).get(min, max)
-
-          // tn = NOT covered AND DO NOT belong to the class
-          val tn = (~coverages(i)) & (~classes(clase).get(min, max))
-
-          // fp = covered AND DO NOT belong to the class
-          val fp = coverages(i) & (~classes(clase).get(min, max))
-
-          // fn = NOT covered AND belong to the class
-          val fn = (~coverages(i)) & classes(clase).get(min, max)
+          val tp2 = coverages(i) & classes(clase).get(min, max)
 
           // Add to the bitSet zeros before min and max in order to have a full-length BitSet.
           // This allows us to perform OR operations on the reduce for the final coverage of the individual
-          coverages(i) = new BitSet(min).concatenate(min + 1, coverages(i), max - (min + 1)).concatenate(max + 1, new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
+          if(min > 0)
+            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - (min))//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
 
-          tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality(), coverages(i))
+
+          tables(i) = new ContingencyTable(0, 0, 0, 0, coverages(i))
 
           //popCoverage = popCoverage | coverages(i)
         }
@@ -486,20 +483,34 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
         // Hay que enviar si o si las coberturas en vez de las matrice de confusión para que se añadan a los inds. y puedan ser usadas en a reinicializacion
         // DEBES PROBAR A USAR UN ACCUMULADOR en un bitset que use represente la cobertura total de la población.
         // Luego, puedes usar token competition también en paralelo.
-        
+
         tables
 
       })
       bits
     }).treeReduce((x, y) => {
       val tables = new Array[ContingencyTable](x.length)
+
       for(i <- x.indices){
-        val tp = x(i).getTp + y(i).getTp
+        val clase = solutionList.get(i).getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
+        /*val tp = x(i).getTp + y(i).getTp
         val fp = x(i).getFp + y(i).getFp
         val tn = x(i).getTn + y(i).getTn
-        val fn = x(i).getFn + y(i).getFn
+        val fn = x(i).getFn + y(i).getFn*/
         val cove = x(i).getCoverage | y(i).getCoverage
-        tables(i) = new ContingencyTable(tp, fp, tn, fn, cove)
+
+        val tp = (cove & classes(clase)).cardinality()
+
+        // tn = NOT covered AND DO NOT belong to the class
+        val tn = ((~cove) & (~classes(clase))).cardinality()
+
+        // fp = covered AND DO NOT belong to the class
+        val fp = (cove & (~classes(clase))).cardinality()
+
+        // fn = NOT covered AND belong to the class
+        val fn = ((~cove) & classes(clase)).cardinality()
+
+        tables(i) = new ContingencyTable(tp,fp,tn,fn, cove)
       }
       tables
     }, Evaluator.TREE_REDUCE_DEPTH)
