@@ -17,7 +17,7 @@ import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
-import utils.{Attribute, ResultWriter}
+import utils.{Attribute, BitSet, ResultWriter}
 
 @Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
   description = Array("@|bold \nFast Big Data MOEA\n|@"))

@@ -17,9 +17,9 @@
 
 package utils
 
-import java.math.BigInteger
-import java.util
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.util.Arrays
+import java.util
 
 /**
   * A simple, fixed-size bit set implementation. This implementation is fast because it avoids
@@ -424,13 +424,18 @@ class BitSet(numBits: Int) extends Serializable {
   }
 
 
+
   override def equals(obj: Any): Boolean = {
     val other = obj.asInstanceOf[BitSet]
 
     if(this.capacity != other.capacity) return false
 
     for(i <- words.indices){
-      if(this.words(i) != other.words(i)) return false
+      if(this.words(i) != other.words(i)) {
+        println("not equals at word " + i)
+        return false
+      }
+
     }
 
     return true
@@ -438,4 +443,18 @@ class BitSet(numBits: Int) extends Serializable {
 
 
 
+
+  def saveToDisk(path: String): Unit = {
+    val oos = new ObjectOutputStream(new FileOutputStream(path))
+    oos.writeObject(this)
+    oos.close()
+  }
+
+
+  def load(path: String): BitSet = {
+    val ois = new ObjectInputStream(new FileInputStream(path))
+    val ret = ois.readObject().asInstanceOf[BitSet]
+    ois.close()
+    ret
+  }
 }

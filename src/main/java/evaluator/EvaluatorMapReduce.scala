@@ -127,8 +127,14 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     // In the map phase, it is returned an array of bitsets for each variable of the problem for all the individuals
     val t_ini = System.currentTimeMillis()
 
-    if (bigDataProcessing) {
-      val tables = calculateBigData(solutionList, problem)
+
+    val coverages = if (bigDataProcessing) {
+      /*val tables =*/ calculateBigData(solutionList, problem)
+
+      /*val orig = tables(0).getCoverage.load("bitset.ser")
+      println(orig equals tables(0).getCoverage)
+
+
       for(i <- tables.indices){
         val cove = new Coverage[BinarySolution]()
         val ind = solutionList.get(i)
@@ -158,12 +164,19 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           cove.setAttribute(ind, new BitSet(problem.asInstanceOf[BigDataEPMProblem].getNumExamples))
           diversity.setAttribute(ind, div)
         }
-      }
+      }*/
 
     } else {
+      /*val coverages =*/ calculateCoveragesNonBigData(solutionList, problem)
+    }
 
-      val coverages = calculateCoveragesNonBigData(solutionList, problem)
+      /*println("Saving file...")
+      coverages(0).saveToDisk("bitset.ser")
+      println("Saved file to disk")
+      System.exit(-1)*/
 
+    val orig = new BitSet(0).load("bitset.ser")
+    println(orig equals coverages(0))
 
       // Calculate the contingency table for each individual
       for (i <- coverages.indices) {
@@ -210,7 +223,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           diversity.setAttribute(ind, div)
         }
       }
-    }
+
 
    // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
@@ -231,11 +244,13 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     // In the map phase, it is returned an array of bitsets for each variable of the problem for all the individuals
     val t_ini = System.currentTimeMillis()
 
-    val table = if (bigDataProcessing) {
+    val coverages = if (bigDataProcessing) {
       calculateBigData(solutionList, problem)
     } else {
-      val coverages = calculateCoveragesNonBigData(solutionList, problem)
-      val tables = new Array[ContingencyTable](coverages.length)
+      calculateCoveragesNonBigData(solutionList, problem)
+    }
+
+      val table = new Array[ContingencyTable](coverages.length)
       for (i <- coverages.indices) {
         val ind = solutionList.get(i)
         val cove = new Coverage[BinarySolution]()
@@ -257,18 +272,21 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           // fn = NOT covered AND belong to the class
           val fn = (~coverages(i)) & classes(clase)
 
-          tables(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality(), coverages(i))
+          table(i) = new ContingencyTable(tp.cardinality(), fp.cardinality(), tn.cardinality(), fn.cardinality(), coverages(i))
         } else {
-          tables(i) = new ContingencyTable(0, 0, 0, 0)
+          table(i) = new ContingencyTable(0, 0, 0, 0)
+          cove.setAttribute(ind, new BitSet(coverages(i).capacity))
         }
       }
-        tables
 
-    }
+
+
 
      for(i <- table.indices){
        val ind = solutionList.get(i)
        val cove = new Coverage[BinarySolution]()
+       val div  = new WRAccNorm()
+       div.calculateValue(table(i))
        val diversity = new DiversityMeasure[BinarySolution]()
 
        if(!isEmpty(ind)){
@@ -278,6 +296,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
            try{
              measures.get(q).calculateValue(table(i))
              measures.get(q).validate()
+
            } catch {
              case ex: InvalidRangeInMeasureException =>
                System.err.println("Error while evaluating Individuals in test: ")
@@ -287,6 +306,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
          val test = new TestMeasures[BinarySolution]()
          test.setAttribute(ind, measures)
          table(i).setAttribute(ind, table(i))
+         diversity.setAttribute(ind, div)
 
        } else {
          // If the rule is empty, set the fitness at minimum possible value for all the objectives.
@@ -421,7 +441,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
     * @param problem
     * @return
     */
-  def calculateBigData(solutionList: util.List[BinarySolution], problem: Problem[BinarySolution]): Array[ContingencyTable] = {
+  def calculateBigData(solutionList: util.List[BinarySolution], problem: Problem[BinarySolution]): Array[BitSet] = {
 
     val numExamples = problem.asInstanceOf[BigDataEPMProblem].getNumExamples
     bitSets.mapPartitions(x => {
@@ -434,9 +454,9 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
         val coverages = new Array[BitSet](solutionList.size())
         for (i <- coverages.indices) {
-          coverages(i) = new BitSet(y(0)(0)._3.capacity)//new BitSet(problem.asInstanceOf[BigDataEPMProblem].numExamples)
+          coverages(i) = new BitSet(max - min)//new BitSet(problem.asInstanceOf[BigDataEPMProblem].numExamples)
         }
-        val tables = new Array[ContingencyTable](solutionList.size())
+        val tables = new Array[BitSet](solutionList.size())
 
         for (i <- 0 until solutionList.size()) {
           // for each individual
@@ -467,15 +487,16 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
             coverages(i) = new BitSet(y(0)(0)._3.capacity)
           }
           // tp = covered AND belong to the class
-          val tp2 = coverages(i) & classes(clase).get(min, max)
+          //val tp2 = coverages(i) & classes(clase).get(min, max)
 
           // Add to the bitSet zeros before min and max in order to have a full-length BitSet.
           // This allows us to perform OR operations on the reduce for the final coverage of the individual
           if(min > 0)
-            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - (min))//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
+            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max)//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
 
 
-          tables(i) = new ContingencyTable(0, 0, 0, 0, coverages(i))
+          //tables(i) = new ContingencyTable(0, 0, 0, 0, coverages(i))
+          tables(i) = coverages(i)
 
           //popCoverage = popCoverage | coverages(i)
         }
@@ -489,28 +510,29 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       })
       bits
     }).treeReduce((x, y) => {
-      val tables = new Array[ContingencyTable](x.length)
+      val tables = new Array[BitSet](x.length)
 
       for(i <- x.indices){
-        val clase = solutionList.get(i).getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
+        //val clase = solutionList.get(i).getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
         /*val tp = x(i).getTp + y(i).getTp
         val fp = x(i).getFp + y(i).getFp
         val tn = x(i).getTn + y(i).getTn
         val fn = x(i).getFn + y(i).getFn*/
-        val cove = x(i).getCoverage | y(i).getCoverage
+        val cove = x(i) | y(i)
 
-        val tp = (cove & classes(clase)).cardinality()
+        //val tp = (cove & classes(clase)).cardinality()
 
         // tn = NOT covered AND DO NOT belong to the class
-        val tn = ((~cove) & (~classes(clase))).cardinality()
+        //val tn = ((~cove) & (~classes(clase))).cardinality()
 
         // fp = covered AND DO NOT belong to the class
-        val fp = (cove & (~classes(clase))).cardinality()
+        //val fp = (cove & (~classes(clase))).cardinality()
 
         // fn = NOT covered AND belong to the class
-        val fn = ((~cove) & classes(clase)).cardinality()
+        //val fn = ((~cove) & classes(clase)).cardinality()
 
-        tables(i) = new ContingencyTable(tp,fp,tn,fn, cove)
+        //tables(i) = new ContingencyTable(0,0,0,0, cove)
+        tables(i) = cove
       }
       tables
     }, Evaluator.TREE_REDUCE_DEPTH)
