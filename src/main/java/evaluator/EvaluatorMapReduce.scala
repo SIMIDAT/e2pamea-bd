@@ -170,13 +170,18 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       /*val coverages =*/ calculateCoveragesNonBigData(solutionList, problem)
     }
 
-      /*println("Saving file...")
-      coverages(0).saveToDisk("bitset.ser")
-      println("Saved file to disk")
+     /*println("Saving file...")
+      for(i <- coverages.indices) {
+        coverages(i).saveToDisk("bitset" + i + ".ser")
+      }
+      println("Saved files to disk")
       System.exit(-1)*/
 
-    val orig = new BitSet(0).load("bitset.ser")
-    println(orig equals coverages(0))
+    /*for(i <- coverages.indices) {
+      val orig = new BitSet(0).load("bitset" + i +".ser")
+      println("Individuo "+ i+": " + orig.equals(coverages(i)))
+    }
+    System.exit(-1)*/
 
       // Calculate the contingency table for each individual
       for (i <- coverages.indices) {
@@ -492,7 +497,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           // Add to the bitSet zeros before min and max in order to have a full-length BitSet.
           // This allows us to perform OR operations on the reduce for the final coverage of the individual
           if(min > 0)
-            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max)//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
+            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max+1)//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
 
 
           //tables(i) = new ContingencyTable(0, 0, 0, 0, coverages(i))

@@ -383,44 +383,56 @@ class BitSet(numBits: Int) extends Serializable {
 
   /**
     * It concatenates two BitSets from the specified threshold of {@code this} until the {@code length} of {@code two}
-    * @param threshold1
-    * @param two
-    * @param length
+    * @param tamFirst
+    * @param other
+    * @param tamSecond
     * @return
     */
-  def concatenate(threshold1: Int, two: BitSet, length: Int): BitSet = {
+  def concatenate(tamFirst: Int, other: BitSet, tamSecond: Int): BitSet = {
 
-    if(this.capacity == 0 || threshold1 == 0){
-      return two
+    if(this.capacity == 0 || tamFirst == 0){
+      return other
     }
 
-    if(two.capacity == 0 || length == 0)
+    if(other.capacity == 0 || tamSecond == 0)
       return this
 
-    val totalSize = threshold1 + length
-    val totalWords = wordIndex(threshold1 + length) + 1
+    if(tamFirst % 64 == 0){
+      return this ++ other
+    }
+
+    val totalSize = tamFirst + tamSecond
+    val totalWords = Math.ceil(totalSize.toDouble / 64.0).toInt
     val newWords = new Array[Long](totalWords)
-    val word = wordIndex(threshold1)
-    val position = threshold1 % 64 // position of the last element of the first bitset.
-    val displacement = 64 - position
+    val position = tamFirst % 64        // position of the last element of the first bitset.
+    val displacement = 64 - position    // garbage bits on "this"
+    val garbageSecond = 64 - (tamSecond % 64) // garbage bits on "other"
 
-    var length1 = this.numWords - 1
+    var i = this.numWords - 1
 
-    val toRet = this ++ two
+    val newBitSet = this ++ other
 
-    while(length1 < toRet.words.length - 1){
-      toRet.words(length1) = toRet.words(length1 + 1) << position | toRet.words(length1) >>> displacement
-      length1 += 1
+    /*if(tamSecond == 844031){
+      println("holaa")
+    }*/
+
+    while(i < newBitSet.words.length - 1){
+      newBitSet.words(i) = newBitSet.words(i + 1) << position | newBitSet.words(i) >>> displacement
+      i += 1
     }
-    toRet.words(length1) = toRet.words(length1) << position //toRet.words(length1) << position
+    newBitSet.words(i) = newBitSet.words(i) >>> displacement
 
-    for(i <- 0 until totalWords){
-      newWords(i) = toRet.words(i)
+    // discard whole garbage words.
+    val garbageWords = Math.floor( (displacement  + garbageSecond).toDouble / 64.0).toInt
+    newBitSet.words.dropRight(garbageWords)
+
+    /*for(i <- 0 until totalWords){
+      newWords(i) = newBitSet.words(i)
     }
-    toRet.words = newWords
-    toRet.numWords = totalWords
+    newBitSet.words = newWords*/
+    newBitSet.numWords = totalWords
 
-    toRet
+    newBitSet
   }
 
 
@@ -433,6 +445,9 @@ class BitSet(numBits: Int) extends Serializable {
     for(i <- words.indices){
       if(this.words(i) != other.words(i)) {
         println("not equals at word " + i)
+        println("orig: " + this.get((i-1)*64, (i+1) * 64).toBitString())
+        println("new : " + other.get((i-1)*64, (i+1) * 64).toBitString())
+        println("Num different bits: " + (this ^ other).cardinality() + " first at: " + (this ^ other).nextSetBit(0))
         return false
       }
 
