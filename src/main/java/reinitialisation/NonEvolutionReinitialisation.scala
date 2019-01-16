@@ -156,8 +156,9 @@ class NonEvolutionReinitialisation[S <: Solution[_]](threshold: Int, numClasses:
               for(j <- y(i).indices){
                 val min = y(i)(j)._1
                 val max = y(i)(j)._2
+
                 if(example >= min && example <= max){
-                  val ex = (example % max) + min
+                  val ex = if(min !=  0) example % min else example
                   if(y(i)(j)._3.get(ex)){
                     val add = (i,j)
                     pairs += add
