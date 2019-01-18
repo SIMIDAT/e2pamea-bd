@@ -119,26 +119,16 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
 
         // Evolutionary process MAIN LOOP:
         int gen = 0;
+
         while (!isStoppingConditionReached()) {
             //matingPopulation = selection(population);
 
             offspringPopulation = reproduction(population);
-            if(gen == 1){
-                offspringPopulation.forEach(x -> {
-                    for(int i = 0; i < x.getNumberOfVariables(); i++){
-                        System.out.print(x.getVariableValue(i) + " ");
-                    }
-                    System.out.println();
-                });
-                System.exit(-1);
-            }
             offspringPopulation = evaluatePopulation(offspringPopulation);
 
             // Reemplazo basado en fast non-dominated sorting
             population = replacement(population, offspringPopulation);
 
-            /*population.forEach(x -> System.out.println(x));
-            System.exit(-1);*/
             // Aquí cosas adicionales como la reinicialización
             int numClasses = ((BigDataEPMProblem) problem).getNumberOfClasses();
             for(int i = 0; i < numClasses; i++) {
