@@ -47,7 +47,7 @@ class NonEvolutionReinitialisation[S <: Solution[_]](threshold: Int, numClasses:
         coverageTotal = coverageTotal | coverage
       }
     }
-
+    //println("eval: " + evaluationsNumber + "  class: " + classNumber + "  cardinality: " + coverageTotal.cardinality())
     val newIndsCovered = (previousCoverage(classNumber) ^ coverageTotal) & (~previousCoverage(classNumber))
     previousCoverage(classNumber) = coverageTotal
 

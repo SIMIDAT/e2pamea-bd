@@ -12,6 +12,7 @@ import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.solution.impl.DefaultBinarySolution
 import org.uma.jmetal.util.binarySet.BinarySet
 import org.uma.jmetal.util.pseudorandom.JMetalRandom
+import org.uma.jmetal.util.pseudorandom.impl.JavaRandomGenerator
 import org.uma.jmetal.util.solutionattribute.impl.{NumberOfViolatedConstraints, OverallConstraintViolation}
 import utils.Attribute
 
@@ -85,7 +86,8 @@ class BigDataEPMProblem extends BinaryProblem{
   /**
     * The random number generator
     */
-  val rand: JMetalRandom = JMetalRandom.getInstance()
+  var rand: JMetalRandom = null
+  var rnd = new JavaRandomGenerator(seed)
 
   /**
     * The Spark Session employed in this problem
@@ -113,6 +115,10 @@ class BigDataEPMProblem extends BinaryProblem{
   private var nullValue = "?"
 
 
+
+  def setRandomGenerator(generator : JMetalRandom) = {
+    rand = generator
+  }
 
   def setNullValue(value: String): Unit = {nullValue = value}
 
@@ -226,6 +232,7 @@ class BigDataEPMProblem extends BinaryProblem{
   }
 
   def createSolution(sets: ArrayBuffer[(Int, Int)], pctVariables: Double): BinarySolution = {
+
     val sol = new DefaultBinarySolution(this)
     val maxVariablesToInitialise = Math.ceil(pctVariables * sets.length)
     val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt + 1)
@@ -473,7 +480,7 @@ class BigDataEPMProblem extends BinaryProblem{
     */
   def zipWithIndex(df: DataFrame, offset: Long = 1, indexName: String = "index") = {
     val columnNames = Array(indexName) ++ df.columns
-    df.repartition(this.numPartitions)
+    //df.repartition(this.numPartitions)
     val dfWithPartitionId = df.withColumn("partition_id", spark_partition_id()).withColumn("inc_id", monotonically_increasing_id())
 
     val partitionOffsets = dfWithPartitionId
@@ -493,4 +500,8 @@ class BigDataEPMProblem extends BinaryProblem{
   }
 
 
+
+  def showDataset() = {
+    this.dataset.show()
+  }
 }

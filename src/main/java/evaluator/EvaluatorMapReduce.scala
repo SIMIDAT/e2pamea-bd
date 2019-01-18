@@ -79,7 +79,11 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       // Calculate the bitsets for the classes
       val numclasses = attrs.last.numValues
-      classes = problema.getDataset.select("index", attrs.last.getName).rdd.mapPartitions(x => {
+
+      val datasetClasses = problema.getDataset.select("index", attrs.last.getName)
+
+
+        classes = datasetClasses.rdd.mapPartitions(x => {
         val clase = new ArrayBuffer[BitSet]()
         for(i <- 0 until numclasses){
           clase += new BitSet(length)
@@ -101,7 +105,6 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       /*val columna = problema.getDataset.select(attrs.last.getName).collect()
       for (i <- columna.indices) {
-        val name = columna(i).getString(0)
         classes(attrs.last.nominalValue.indexOf(name)).set(i)
       }*/
 
@@ -598,12 +601,13 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       }
 
       var counter = 0
-      x.foreach(f = y => {
+      x.foreach(y => {
         val index = y.getLong(0).toInt
+
         if(index < min) min = index
         if(index > max) max = index
 
-        for (i <- attrs.indices.dropRight(1)) {
+        for (i <- attrs.indices.dropRight(1)) { // drop the class attribute in this processing
           val ind = i + 1
           // For each attribute
           for (j <- 0 until attrs(i).numValues) {
@@ -638,7 +642,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       val aux = new Array[(Int, Int, ArrayBuffer[ArrayBuffer[BitSet]]) ](1)
       aux(0) = (min, max, partialSet)
       aux.iterator
-    }).treeReduce((x, y) => {
+    }, true).treeReduce((x, y) => {
       val min = Array(x._1, y._1).min
       val max = Array(x._2, y._2).max
 

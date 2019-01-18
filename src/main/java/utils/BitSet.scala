@@ -472,4 +472,7 @@ class BitSet(numBits: Int) extends Serializable {
     ois.close()
     ret
   }
+
+
+  override def toString: String = get(0,1000).toBitString()
 }

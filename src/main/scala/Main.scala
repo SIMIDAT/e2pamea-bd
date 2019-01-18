@@ -12,7 +12,7 @@ import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDistanceComparator}
-import org.uma.jmetal.util.pseudorandom.RandomGenerator
+import org.uma.jmetal.util.pseudorandom.{JMetalRandom, RandomGenerator}
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
@@ -39,7 +39,7 @@ class Main extends Runnable{
   var verbose = false
 
   @Option(names = Array("-s", "--seed"), paramLabel = "SEED", description = Array("The seed for the random number generator."))
-  var seed : Int = 1
+  var seed : Long = 1
 
   @Option(names = Array("-p", "--partitions"), paramLabel = "NUMBER", description = Array("The number of partitions used within the MapReduce procedure"))
   var numPartitions = 4
@@ -118,11 +118,12 @@ class Main extends Runnable{
       // use this if you need to increment Kryo buffer max size. Default 64m
       .config("spark.kryoserializer.buffer.max", "1024m")
       .appName("Nuevo-MOEA")
-      .master("local[*]")
+      //.master("local[*]")
       .getOrCreate()
 
 
-    if(!verbose) spark.sparkContext.setLogLevel("ERROR")
+    //if(!verbose)
+      spark.sparkContext.setLogLevel("ERROR")
 
 
     // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
@@ -130,14 +131,21 @@ class Main extends Runnable{
 
     val t_ini = System.currentTimeMillis()
     println("Reading data...")
+    problem.setRandomGenerator(JMetalRandom.getInstance())
     problem.setNullValue(nullValueString)
     problem.setNumLabels(numLabels)
     problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
     val t_fin_read = System.currentTimeMillis()
-
     problem.rand.setSeed(seed)
+
+    if(verbose) {
+      problem.showDataset()
+      println("seed: " + seed)
+      System.exit(-1)
+    }
+
     var features: Int = 0
     val attrs: Array[Attribute] = problem.getAttributes
     for (i <- 0 until attrs.length){
