@@ -355,7 +355,7 @@ class BitSet(numBits: Int) extends Serializable {
   }
 
   /**
-    * It concatenates two BitSets
+    * It concatenates the words of  two BitSets
     * @param other
     * @return
     */
@@ -412,10 +412,6 @@ class BitSet(numBits: Int) extends Serializable {
 
     val newBitSet = this ++ other
 
-    /*if(tamSecond == 844031){
-      println("holaa")
-    }*/
-
     while(i < newBitSet.words.length - 1){
       newBitSet.words(i) = newBitSet.words(i + 1) << position | newBitSet.words(i) >>> displacement
       i += 1
@@ -426,10 +422,6 @@ class BitSet(numBits: Int) extends Serializable {
     val garbageWords = Math.floor( (displacement  + garbageSecond).toDouble / 64.0).toInt
     newBitSet.words.dropRight(garbageWords)
 
-    /*for(i <- 0 until totalWords){
-      newWords(i) = newBitSet.words(i)
-    }
-    newBitSet.words = newWords*/
     newBitSet.numWords = totalWords
 
     newBitSet

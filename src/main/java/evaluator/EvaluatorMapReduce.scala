@@ -21,9 +21,6 @@ import scala.collection.mutable.ArrayBuffer
   */
 class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
-
-
-
   /**
     * The bitSets for the variables. They are distributed across the cluster.
     * Each row in the RDD represent a variable with different BitSets for each possible value
@@ -32,7 +29,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
 
   /**
-    * The bitsets for the variables in a non distributed environment
+    * The bitsets for the variables in a non-distributed environment
     */
   var sets: ArrayBuffer[ArrayBuffer[BitSet]] = null
 
@@ -132,59 +129,10 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
 
     val coverages = if (bigDataProcessing) {
-      /*val tables =*/ calculateBigData(solutionList, problem)
-
-      /*val orig = tables(0).getCoverage.load("bitset.ser")
-      println(orig equals tables(0).getCoverage)
-
-
-      for(i <- tables.indices){
-        val cove = new Coverage[BinarySolution]()
-        val ind = solutionList.get(i)
-        val diversity = new DiversityMeasure[BinarySolution]()
-
-        if(!isEmpty(ind)){
-          val div = new WRAccNorm()
-          div.calculateValue(tables(i))
-          diversity.setAttribute(ind, div)
-          tables(i).setAttribute(ind, tables(i))
-
-          val objectives = super.calculateMeasures(tables(i))
-          for (j <- 0 until objectives.size()) {
-            ind.setObjective(j, objectives.get(j).getValue)
-          }
-          cove.setAttribute(ind, tables(i).getCoverage)
-        } else {
-
-          // If the rule is empty, set the fitness at minimum possible value for all the objectives.
-          for (j <- 0 until ind.getNumberOfObjectives) {
-            ind.setObjective(j, Double.NegativeInfinity)
-          }
-          val div = new WRAccNorm()
-          val rank = new DominanceRanking[BinarySolution]()
-          div.setValue(Double.NegativeInfinity)
-          rank.setAttribute(ind, Integer.MAX_VALUE)
-          cove.setAttribute(ind, new BitSet(problem.asInstanceOf[BigDataEPMProblem].getNumExamples))
-          diversity.setAttribute(ind, div)
-        }
-      }*/
-
+      calculateBigData(solutionList, problem)
     } else {
-      /*val coverages =*/ calculateCoveragesNonBigData(solutionList, problem)
+      calculateCoveragesNonBigData(solutionList, problem)
     }
-
-     /*println("Saving file...")
-      for(i <- coverages.indices) {
-        coverages(i).saveToDisk("bitset" + i + ".ser")
-      }
-      println("Saved files to disk")
-      System.exit(-1)*/
-
-    /*for(i <- coverages.indices) {
-      val orig = new BitSet(0).load("bitset" + i +".ser")
-      println("Individuo "+ i+": " + orig.equals(coverages(i)))
-    }
-    System.exit(-1)*/
 
       // Calculate the contingency table for each individual
       for (i <- coverages.indices) {
@@ -231,9 +179,6 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           diversity.setAttribute(ind, div)
         }
       }
-
-
-   // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
     // Once we've got the coverage of the rules, we can calculate the contingecy tables.
     return solutionList
@@ -329,8 +274,6 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
          diversity.setAttribute(ind, div)
        }
      }
-
-    // println("Time spent on the evaluation of 100 individuals after the precalculation: " + (System.currentTimeMillis() - t_ini) + " ms.")
 
     // Once we've got the coverage of the rules, we can calculate the contingecy tables.
     return solutionList
@@ -462,7 +405,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
         val coverages = new Array[BitSet](solutionList.size())
         for (i <- coverages.indices) {
-          coverages(i) = new BitSet(max - min)//new BitSet(problem.asInstanceOf[BigDataEPMProblem].numExamples)
+          coverages(i) = new BitSet(max - min)
         }
         val tables = new Array[BitSet](solutionList.size())
 
@@ -494,25 +437,14 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           } else {
             coverages(i) = new BitSet(y(0)(0)._3.capacity)
           }
-          // tp = covered AND belong to the class
-          //val tp2 = coverages(i) & classes(clase).get(min, max)
 
           // Add to the bitSet zeros before min and max in order to have a full-length BitSet.
           // This allows us to perform OR operations on the reduce for the final coverage of the individual
           if(min > 0)
-            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max+1)//.concatenate(max +1  , new BitSet(numExamples - (max + 1)), numExamples - (max + 1))
+            coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max+1)
 
-
-          //tables(i) = new ContingencyTable(0, 0, 0, 0, coverages(i))
           tables(i) = coverages(i)
-
-          //popCoverage = popCoverage | coverages(i)
         }
-
-        // Hay que enviar si o si las coberturas en vez de las matrice de confusión para que se añadan a los inds. y puedan ser usadas en a reinicializacion
-        // DEBES PROBAR A USAR UN ACCUMULADOR en un bitset que use represente la cobertura total de la población.
-        // Luego, puedes usar token competition también en paralelo.
-
         tables
 
       })
@@ -521,25 +453,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       val tables = new Array[BitSet](x.length)
 
       for(i <- x.indices){
-        //val clase = solutionList.get(i).getAttribute(classOf[Clase[BinarySolution]]).asInstanceOf[Int]
-        /*val tp = x(i).getTp + y(i).getTp
-        val fp = x(i).getFp + y(i).getFp
-        val tn = x(i).getTn + y(i).getTn
-        val fn = x(i).getFn + y(i).getFn*/
         val cove = x(i) | y(i)
-
-        //val tp = (cove & classes(clase)).cardinality()
-
-        // tn = NOT covered AND DO NOT belong to the class
-        //val tn = ((~cove) & (~classes(clase))).cardinality()
-
-        // fp = covered AND DO NOT belong to the class
-        //val fp = (cove & (~classes(clase))).cardinality()
-
-        // fn = NOT covered AND belong to the class
-        //val fn = ((~cove) & classes(clase)).cardinality()
-
-        //tables(i) = new ContingencyTable(0,0,0,0, cove)
         tables(i) = cove
       }
       tables
@@ -555,7 +469,7 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
 
   /**
-    * If returns the maximum belonging degree of the LLs defined for a variable
+    * It returns the maximum belonging degree of the LLs defined for a variable
     * @param problem
     * @param variable
     * @param x
@@ -665,11 +579,18 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       }
 
       (min, max, x._3)
-    }, 6)._3
+    }, Evaluator.TREE_REDUCE_DEPTH)._3
 
   }
 
 
+  /**
+    * It initialises the bitSets structure for the processing of the individuals in an RDD for distributed computing.
+    *
+    * @param problema
+    * @param attrs
+    * @return
+    */
   def initaliseBigData(problema: BigDataEPMProblem, attrs: Array[Attribute]): RDD[ArrayBuffer[Array[(Int, Int, BitSet)]]] = {
 
     problema.getDataset.rdd.mapPartitions(x => {

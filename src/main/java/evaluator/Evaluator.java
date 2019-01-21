@@ -18,7 +18,10 @@ import java.util.logging.Logger;
 public abstract class Evaluator<S extends Solution> implements SolutionListEvaluator<S> {
 
 
-    public static final int TREE_REDUCE_DEPTH = 2;
+    /**
+     * The maximum estimated size of the tree when using a treeReduce function
+     */
+    public static final int TREE_REDUCE_DEPTH = 4;
 
     /**
      * The objectives to be used in the evaluator.
