@@ -1,6 +1,6 @@
-name := "VF-AdMOEA"
+name := "VFMOEA-BigData"
 
-version := "0.1"
+version := "1.0"
 
 scalaVersion := "2.10.6"
 
