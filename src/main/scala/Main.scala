@@ -12,12 +12,12 @@ import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
 import org.uma.jmetal.util.comparator.{DominanceComparator, RankingAndCrowdingDistanceComparator}
-import org.uma.jmetal.util.pseudorandom.RandomGenerator
+import org.uma.jmetal.util.pseudorandom.{JMetalRandom, RandomGenerator}
 import org.uma.jmetal.util.{AlgorithmRunner, ProblemUtils}
 import picocli.CommandLine
 import picocli.CommandLine.{Command, Option, Parameters}
 import qualitymeasures.{QualityMeasure, SuppDiff, WRAccNorm}
-import utils.{Attribute, ResultWriter}
+import utils.{Attribute, BitSet, ResultWriter}
 
 @Command(name = "spark-submit --master <URL> <jarfile>", version = Array("v1.0"),
   description = Array("@|bold \nFast Big Data MOEA\n|@"))
@@ -39,7 +39,7 @@ class Main extends Runnable{
   var verbose = false
 
   @Option(names = Array("-s", "--seed"), paramLabel = "SEED", description = Array("The seed for the random number generator."))
-  var seed : Int = 1
+  var seed : Long = 1
 
   @Option(names = Array("-p", "--partitions"), paramLabel = "NUMBER", description = Array("The number of partitions used within the MapReduce procedure"))
   var numPartitions = 4
@@ -75,7 +75,12 @@ class Main extends Runnable{
   @Option(names = Array("-f", "--filter"), paramLabel = "FILTER,THRESHOLD", split=",", description = Array("The filter by measure to be applied. The format must be MEASURE,THRESHOLD, where MEASURE is one of the available quality measures. By default a confidence filter with a threshold=0.6 is applied"))
   var filter: Array[Any] = Array("Confidence", "0.6")
 
+  @Option(names = Array("-B", "--bigdata"), description = Array("If set, the evaluation in the evolutionary process is performed on the optimised BitSet structure by means of an RDD. This means that for each generation, a MapReduce procedure is triggered for evaluating the individuals. RECOMMENDED FOR VERY BIG DATA SETS."))
+  var bigDataProcessing = false
+
+
   override def run(): Unit = {
+
     if(help){
       new CommandLine(this).usage(System.err)
       return
@@ -91,6 +96,7 @@ class Main extends Runnable{
     if(resultTraining == null) resultTraining = trainingFile + "_tra.txt"
     if(resultTest == null) resultTest = trainingFile + "_tst.txt"
     if(resultRules == null) resultRules = trainingFile + "_rules.txt"
+
     val objs =  if(objectives != null){
       val arr = new util.ArrayList[QualityMeasure]()
       for(s <- objectives){
@@ -104,6 +110,7 @@ class Main extends Runnable{
       arr
     }
 
+
     filter(0) = Class.forName(classOf[QualityMeasure].getPackage.getName + "." + filter(0).asInstanceOf[String]).newInstance().asInstanceOf[QualityMeasure]
 
     // Se define el entorno de Spark
@@ -113,26 +120,27 @@ class Main extends Runnable{
       .config("spark.kryoserializer.buffer", "1024k")
       // use this if you need to increment Kryo buffer max size. Default 64m
       .config("spark.kryoserializer.buffer.max", "1024m")
-      .appName("Nuevo-MOEA")
-      .master("local[*]")
+      .appName("VeryFast MOEA-BigData")
+      //.master("local[*]")
       .getOrCreate()
-
 
     if(!verbose) spark.sparkContext.setLogLevel("ERROR")
 
-    // Se elige el problema, esto se debe de ver como se le puede pasar los ficheros de keel o arff
+
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 
     val t_ini = System.currentTimeMillis()
     println("Reading data...")
+    problem.setRandomGenerator(JMetalRandom.getInstance())
     problem.setNullValue(nullValueString)
     problem.setNumLabels(numLabels)
     problem.readDataset(trainingFile, numPartitions, spark)
     problem.getAttributes(spark)
     problem.generateFuzzySets()
     val t_fin_read = System.currentTimeMillis()
-
     problem.rand.setSeed(seed)
+
+
     var features: Int = 0
     val attrs: Array[Attribute] = problem.getAttributes
     for (i <- 0 until attrs.length){
@@ -147,7 +155,7 @@ class Main extends Runnable{
     // Se elige el evaluador
     val evaluador = new EvaluatorMapReduce()
     evaluador.setObjectives(objs)
-    evaluador.setBigDataProcessing(false)
+    evaluador.setBigDataProcessing(bigDataProcessing)
 
 
     // Se elige el crossover y sus parametros, en este caso, el crossover sbx
@@ -167,14 +175,6 @@ class Main extends Runnable{
     // Por defecto, el comparador de dominancia MINIMIZA los objetivos, hay que revertirlo para poder maximizar.
     val dominanceComparator = new DominanceComparator[BinarySolution]().reversed()
 
-    // Se construye el algoritmo genetico con los datos que se han introducido.
-    /*val algorithm = new NSGAIIBuilder[BinarySolution](problem, crossover.asInstanceOf[CrossoverOperator[BinarySolution]], mutation)
-      .setSelectionOperator(selection)
-      .setMaxEvaluations(25000)
-      .setPopulationSize(100).setDominanceComparator(dominanceComparator)
-      .setSolutionListEvaluator(evaluador)
-      .build*/
-
     val algorithm = new NSGAIIModifiableBuilder[BinarySolution]
       .setProblem(problem)
       .setCrossoverOperator(crossover.asInstanceOf[CrossoverOperator[BinarySolution]])
@@ -187,10 +187,7 @@ class Main extends Runnable{
       .setFilter(filter(0).asInstanceOf[QualityMeasure])
       .setFilterThreshold(filter(1).toString.toDouble)
       .addOperator(new HUXCrossover(1, rdob))
-      //.addOperator(new BitFlipMutation(1,rdob))
-      //.addOperator(new SinglePointCrossover(1, rdob))
       .build()
-    //val algorithm = new [BinarySolution](problem,25000,100,crossover,mutation, selection,new SequentialSolutionListEvaluator[BinarySolution]())
 
     // Ahora, se ejecuta el algoritmo genetico previamente creado.
     val algorithmRunner: AlgorithmRunner = new AlgorithmRunner.Executor(algorithm).execute

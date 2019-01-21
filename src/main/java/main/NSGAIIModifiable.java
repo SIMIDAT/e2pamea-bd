@@ -1,7 +1,9 @@
 package main;
 
 import attributes.Clase;
+import attributes.Coverage;
 import attributes.DiversityMeasure;
+import attributes.GeneratedOperator;
 import evaluator.Evaluator;
 import evaluator.EvaluatorMapReduce;
 import filters.MeasureFilter;
@@ -13,6 +15,7 @@ import org.uma.jmetal.operator.MutationOperator;
 import org.uma.jmetal.operator.Operator;
 import org.uma.jmetal.operator.SelectionOperator;
 import org.uma.jmetal.problem.Problem;
+import org.uma.jmetal.solution.BinarySolution;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.util.JMetalException;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
@@ -113,10 +116,13 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
         population = createInitialPopulation();
         population = evaluatePopulation(population);
 
+
         // Evolutionary process MAIN LOOP:
         int gen = 0;
+
         while (!isStoppingConditionReached()) {
             //matingPopulation = selection(population);
+
             offspringPopulation = reproduction(population);
             offspringPopulation = evaluatePopulation(offspringPopulation);
 
@@ -267,7 +273,6 @@ public class NSGAIIModifiable<S extends Solution<?>> extends NSGAII<S> {
             while (count < filterPop.size()) {
                 // Apply the different operators according to its probability.
                 double prob = ((BigDataEPMProblem) problem).rand().nextDouble(0.0, 1.0);
-
 
                 int index = getIndexOfOperator(prob);
                 if (operators.get(index) instanceof CrossoverOperator) {

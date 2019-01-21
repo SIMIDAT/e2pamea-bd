@@ -8,6 +8,7 @@ import qualitymeasures.ContingencyTable;
 import qualitymeasures.QualityMeasure;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * An evaluator of individuals to be used in an evolutionary algorithm
@@ -16,6 +17,12 @@ import java.util.ArrayList;
  */
 public abstract class Evaluator<S extends Solution> implements SolutionListEvaluator<S> {
 
+
+    /**
+     * The maximum estimated size of the tree when using a treeReduce function
+     */
+    public static final int TREE_REDUCE_DEPTH = 4;
+
     /**
      * The objectives to be used in the evaluator.
      * These are the objectives employed for guiding the search process and they are used only for its identification.
@@ -23,6 +30,7 @@ public abstract class Evaluator<S extends Solution> implements SolutionListEvalu
     private ArrayList<QualityMeasure>  objectives;
 
     private Problem<S> problem;
+
 
 
     /**

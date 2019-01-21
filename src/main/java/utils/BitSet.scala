@@ -17,7 +17,9 @@
 
 package utils
 
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.util.Arrays
+import java.util
 
 /**
   * A simple, fixed-size bit set implementation. This implementation is fast because it avoids
@@ -25,8 +27,10 @@ import java.util.Arrays
   */
 class BitSet(numBits: Int) extends Serializable {
 
-  private val words = new Array[Long](bit2words(numBits))
-  private val numWords = words.length
+  private var words = new Array[Long](bit2words(numBits))
+  private var numWords = words.length
+
+  private val lastPosition = numBits % 64
 
   /**
     * Compute the capacity (number of bits) that can be represented
@@ -176,11 +180,13 @@ class BitSet(numBits: Int) extends Serializable {
     * @param index the bit index
     */
   def set(index: Int) {
+    this.expandTo(index >> 6)
     val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
     words(index >> 6) |= bitmask        // div by 64 and mask
   }
 
   def unset(index: Int) {
+    this.expandTo(index >> 6)
     val bitmask = 1L << (index & 0x3f)  // mod 64 and shift
     words(index >> 6) &= ~bitmask        // div by 64 and mask
   }
@@ -196,6 +202,51 @@ class BitSet(numBits: Int) extends Serializable {
     val bitmask = 1L << (index & 0x3f)   // mod 64 and shift
     (words(index >> 6) & bitmask) != 0  // div by 64 and mask
   }
+
+
+  /**
+    * Returns a subset of the current bitset formed from bits from var1 to var2
+    *
+    * @param var1
+    * @param var2
+    * @return
+    */
+  def get(var1: Int, var2: Int): BitSet = {
+    //checkRange(var1, var2)
+    //this.checkInvariants()
+    val var3 = this.capacity
+    if (var3 > var1 && var1 != var2) {
+      val v2: Int = if (var2 > var3) var3 else var2
+      val var4 = new BitSet(v2 - var1)
+      val var5 = wordIndex(v2 - var1 - 1) + 1
+      var var6 = wordIndex(var1)
+      val var7 = (var1 & 63) == 0
+      var var8 = 0
+      while (var8 < var5 - 1) {
+        var4.words(var8) = if (var7)
+          this.words(var6)
+        else
+          this.words(var6) >>> var1 | this.words(var6 + 1) << -var1
+        var8 += 1
+        var6 += 1; var6
+
+      }
+      val var10 = -1L >>> -var2
+      var4.words(var5 - 1) = if ((var2 - 1 & 63) < (var1 & 63)) this.words(var6) >>> var1 | (this.words(var6 + 1) & var10) << -var1
+      else (this.words(var6) & var10) >>> var1
+      var4.numWords = var5
+      var counter = this.numWords - 1
+      while(counter >= 0 && this.words(counter) == 0L){
+        counter -= 1
+      }
+      this.numWords = counter + 1
+      //var4.recalculateWordsInUse()
+      //var4.checkInvariants()
+      var4
+    } else
+      new BitSet(0)
+  }
+
 
   /**
     * Get an iterator over the set bits.
@@ -215,10 +266,13 @@ class BitSet(numBits: Int) extends Serializable {
   def cardinality(): Int = {
     var sum = 0
     var i = 0
-    while (i < numWords) {
+    while (i < numWords - 1) {
       sum += java.lang.Long.bitCount(words(i))
       i += 1
     }
+    var a = words(i) >>> (64 - lastPosition)
+    a = a << lastPosition
+    sum += java.lang.Long.bitCount(a)
     sum
   }
 
@@ -277,4 +331,140 @@ class BitSet(numBits: Int) extends Serializable {
     }
     result
   }
+
+  private def ensureCapacity(var1: Int): Unit = {
+    if (this.words.length < var1) {
+      val var2: Int = Math.max(2 * this.words.length, var1)
+      this.words = util.Arrays.copyOf(this.words, var2)
+    }
+  }
+
+  private def expandTo(var1: Int): Unit = {
+    val var2: Int = var1 + 1
+    if (this.numWords < var2) {
+      this.ensureCapacity(var2)
+      this.numWords = var2
+    }
+  }
+
+
+
+
+  private def wordIndex(i: Int): Int = {
+    i >> 6
+  }
+
+  /**
+    * It concatenates the words of  two BitSets
+    * @param other
+    * @return
+    */
+  def ++(other: BitSet) : BitSet = {
+
+    val a = new BitSet(0)
+    a.words = this.words ++ other.words
+    a.numWords = this.numWords + other.numWords
+
+    a
+  }
+
+
+  /**
+    * It sets from min to max the values of the given BitSet into this.
+    *
+    * @param min
+    * @param max
+    * @param other
+    */
+  def set(min: Int, max: Int, other: BitSet): Unit = {
+
+  }
+
+
+  /**
+    * It concatenates two BitSets from the specified threshold of {@code this} until the {@code length} of {@code two}
+    * @param tamFirst
+    * @param other
+    * @param tamSecond
+    * @return
+    */
+  def concatenate(tamFirst: Int, other: BitSet, tamSecond: Int): BitSet = {
+
+    if(this.capacity == 0 || tamFirst == 0){
+      return other
+    }
+
+    if(other.capacity == 0 || tamSecond == 0)
+      return this
+
+    if(tamFirst % 64 == 0){
+      return this ++ other
+    }
+
+    val totalSize = tamFirst + tamSecond
+    val totalWords = Math.ceil(totalSize.toDouble / 64.0).toInt
+    val newWords = new Array[Long](totalWords)
+    val position = tamFirst % 64        // position of the last element of the first bitset.
+    val displacement = 64 - position    // garbage bits on "this"
+    val garbageSecond = 64 - (tamSecond % 64) // garbage bits on "other"
+
+    var i = this.numWords - 1
+
+    val newBitSet = this ++ other
+
+    while(i < newBitSet.words.length - 1){
+      newBitSet.words(i) = newBitSet.words(i + 1) << position | newBitSet.words(i) >>> displacement
+      i += 1
+    }
+    newBitSet.words(i) = newBitSet.words(i) >>> displacement
+
+    // discard whole garbage words.
+    val garbageWords = Math.floor( (displacement  + garbageSecond).toDouble / 64.0).toInt
+    newBitSet.words.dropRight(garbageWords)
+
+    newBitSet.numWords = totalWords
+
+    newBitSet
+  }
+
+
+
+  override def equals(obj: Any): Boolean = {
+    val other = obj.asInstanceOf[BitSet]
+
+    if(this.capacity != other.capacity) return false
+
+    for(i <- words.indices){
+      if(this.words(i) != other.words(i)) {
+        println("not equals at word " + i)
+        println("orig: " + this.get((i-1)*64, (i+1) * 64).toBitString())
+        println("new : " + other.get((i-1)*64, (i+1) * 64).toBitString())
+        println("Num different bits: " + (this ^ other).cardinality() + " first at: " + (this ^ other).nextSetBit(0))
+        return false
+      }
+
+    }
+
+    return true
+  }
+
+
+
+
+  def saveToDisk(path: String): Unit = {
+    val oos = new ObjectOutputStream(new FileOutputStream(path))
+    oos.writeObject(this)
+    oos.close()
+  }
+
+
+  def load(path: String): BitSet = {
+    val ois = new ObjectInputStream(new FileInputStream(path))
+    val ret = ois.readObject().asInstanceOf[BitSet]
+    ois.close()
+    ret
+  }
+
+
+  override def toString: String = get(0,1000).toBitString()
 }
