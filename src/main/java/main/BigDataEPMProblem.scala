@@ -5,7 +5,7 @@ import fuzzy.{DecreasingLineFuzzySet, Fuzzy, IncreasingLineFuzzySet, TriangularF
 import org.apache.spark.sql.expressions._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.util.collection.BitSet
 import org.uma.jmetal.problem.BinaryProblem
 import org.uma.jmetal.solution.BinarySolution
@@ -23,6 +23,7 @@ import scala.collection.mutable.ArrayBuffer
   *
   */
 class BigDataEPMProblem extends BinaryProblem{
+
 
   val RANDOM_INITIALISATION: Int = 0
   val ORIENTED_INITIALISATION: Int = 1
@@ -299,13 +300,16 @@ class BigDataEPMProblem extends BinaryProblem{
 
     val schema = StructType(listValues)
 
-    dataset = spark.read.option("header", "false")
-      .option("comment", "@")
-      .option("nullValue", nullValue)
-      .option("mode", "FAILFAST")   // This mode throws an error on any malformed line is encountered
-      .schema(schema).csv(path).coalesce(this.numPartitions)
+
+      dataset = spark.read.option("header", "false")
+        .option("comment", "@")
+        .option("nullValue", nullValue)
+        .option("mode", "FAILFAST") // This mode throws an error on any malformed line is encountered
+        .schema(schema).csv(path).coalesce(this.numPartitions)
+
 
     dataset = zipWithIndex(dataset,0)
+
     numExamples = dataset.count().toInt
 
   }
@@ -433,7 +437,6 @@ class BigDataEPMProblem extends BinaryProblem{
     val sol = new DefaultBinarySolution(this)
     val maxVariablesToInitialise = Math.round(pctVariables * getNumberOfVariables)
     val varsToInit = rand.nextInt(1, maxVariablesToInitialise.toInt)
-
     val initialised = new BitSet(getNumberOfVariables)
     var varInitialised = 0
 

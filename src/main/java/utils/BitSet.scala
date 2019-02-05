@@ -21,6 +21,8 @@ import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutp
 import java.util.Arrays
 import java.util
 
+import scala.collection.mutable
+
 /**
   * A simple, fixed-size bit set implementation. This implementation is fast because it avoids
   * safety/bound checking.

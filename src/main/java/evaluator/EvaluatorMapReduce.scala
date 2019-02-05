@@ -134,6 +134,8 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
       calculateCoveragesNonBigData(solutionList, problem)
     }
 
+    println("Size of coverages: " + SizeEstimator.estimate(coverages).toDouble / (1024.0 * 1024.0 * 1024.0) + " GB.")
+
       // Calculate the contingency table for each individual
       for (i <- coverages.indices) {
         val ind = solutionList.get(i)
@@ -395,19 +397,18 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
   def calculateBigData(solutionList: util.List[BinarySolution], problem: Problem[BinarySolution]): Array[BitSet] = {
 
     val numExamples = problem.asInstanceOf[BigDataEPMProblem].getNumExamples
-    bitSets.mapPartitions(x => {
+
+     bitSets.mapPartitions(x => {
       val bits = x.map(y => {
         //val index = y._2.toInt
         //val sets = y._1
         val min = y(0)(0)._1
         val max = y(0)(0)._2
-        var popCoverage = new BitSet(max - min)
 
         val coverages = new Array[BitSet](solutionList.size())
         for (i <- coverages.indices) {
           coverages(i) = new BitSet(max - min)
         }
-        val tables = new Array[BitSet](solutionList.size())
 
         for (i <- 0 until solutionList.size()) {
           // for each individual
@@ -442,21 +443,16 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
           // This allows us to perform OR operations on the reduce for the final coverage of the individual
           if(min > 0)
             coverages(i) = new BitSet(min).concatenate(min , coverages(i), max - min).get(0,max+1)
-
-          tables(i) = coverages(i)
         }
-        tables
+        coverages
 
       })
       bits
     }).treeReduce((x, y) => {
-      val tables = new Array[BitSet](x.length)
-
       for(i <- x.indices){
-        val cove = x(i) | y(i)
-        tables(i) = cove
+        x(i) =  x(i) | y(i)
       }
-      tables
+      x
     }, Evaluator.TREE_REDUCE_DEPTH)
 
   }
@@ -580,6 +576,8 @@ class EvaluatorMapReduce extends Evaluator[BinarySolution] {
 
       (min, max, x._3)
     }, Evaluator.TREE_REDUCE_DEPTH)._3
+
+
 
   }
 

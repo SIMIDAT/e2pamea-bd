@@ -6,6 +6,7 @@ import operators.crossover.NPointCrossover
 import operators.mutation.BiasedMutationDNF
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.util.SizeEstimator
 import org.uma.jmetal.operator.CrossoverOperator
 import org.uma.jmetal.operator.impl.crossover.HUXCrossover
 import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
@@ -125,7 +126,6 @@ class Main extends Runnable{
       .getOrCreate()
 
     if(!verbose) spark.sparkContext.setLogLevel("ERROR")
-
 
     val problem = ProblemUtils.loadProblem[BinaryProblem]("main.BigDataEPMProblem").asInstanceOf[BigDataEPMProblem]
 

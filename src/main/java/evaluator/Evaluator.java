@@ -21,7 +21,7 @@ public abstract class Evaluator<S extends Solution> implements SolutionListEvalu
     /**
      * The maximum estimated size of the tree when using a treeReduce function
      */
-    public static final int TREE_REDUCE_DEPTH = 4;
+    public static final int TREE_REDUCE_DEPTH = 20;
 
     /**
      * The objectives to be used in the evaluator.
