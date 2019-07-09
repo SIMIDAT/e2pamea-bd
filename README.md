@@ -14,7 +14,7 @@ sbt assembly
 
 ## Data format
 
-Data must follows the KEEL dataset format (http://keel.es/).
+Data must follows the ARFF dataset format (https://www.cs.waikato.ac.nz/~ml/weka/arff.html).
 
 ## Parameters & Execution
 
